@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ResumeCraft — Сервіс-генератор резюме</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+      --border: #e2e8f0;
+      --brand: #2563eb;
+      --brand-dark: #1d4ed8;
+      --ok: #047857;
+      --ok-bg: #ecfdf5;
+      --err: #b91c1c;
+      --err-bg: #fef2f2;
+      --warn-bg: #fffbeb;
+      --warn: #92400e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(255,255,255,0.96);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(6px);
+    }
+    .nav-wrap {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 12px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 18px;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .logo-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--brand);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 15px;
+    }
+    .nav-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    button, .btn {
+      font: inherit;
+      cursor: pointer;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      transition: 0.15s;
+    }
+    button:hover { background: #f1f5f9; }
+    button.primary { background: var(--brand); color: #fff; border-color: var(--brand); }
+    button.primary:hover { background: var(--brand-dark); }
+    button.active-tab { background: #eff6ff; color: var(--brand-dark); border-color: #bfdbfe; }
+    button.danger { background: #dc2626; color: #fff; border-color: #dc2626; }
+    button.small { padding: 4px 10px; font-size: 12px; }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+    .container { max-width: 1240px; margin: 0 auto; padding: 24px 20px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    @media (max-width: 920px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+    .hero-title { font-size: 36px; line-height: 1.15; margin: 10px 0 14px; font-weight: 800; }
+    .pill {
+      display: inline-block;
+      background: #eff6ff;
+      color: var(--brand-dark);
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 600px) { .field-grid { grid-template-columns: 1fr; } }
+    input, textarea, select {
+      width: 100%;
+      padding: 8px 11px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font: inherit;
+      font-size: 13.5px;
+      background: #fff;
+    }
+    textarea { resize: vertical; }
+    label.field-label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+    .notice { padding: 10px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 14px; }
+    .notice.err { background: var(--err-bg); color: var(--err); border: 1px solid #fecaca; }
+    .notice.ok { background: var(--ok-bg); color: var(--ok); border: 1px solid #a7f3d0; }
+    .notice.warn { background: var(--warn-bg); color: var(--warn); border: 1px solid #fde68a; }
+    .hidden { display: none !important; }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f1f5f9;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .preview-frame {
+      width: 100%;
+      min-height: 680px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+    }
+    .exp-box { border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-top: 10px; background: #fcfcfd; }
+    .progress-bar { height: 10px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin-top: 6px; }
+    .progress-fill { height: 100%; background: var(--brand); transition: width 0.25s; }
+    .ai-box {
+      border: 1px solid #bfdbfe;
+      background: #eff6ff;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    .ai-variant {
+      background: #fff;
+      border: 1px solid #dbeafe;
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="nav-wrap">
+      <div class="logo" onclick="navigate('landing')">
+        <div class="logo-badge">RC</div>
+        <span>ResumeCraft</span>
+      </div>
+      <div class="nav-actions" id="nav-actions"></div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div id="global-alert" class="notice hidden"></div>
+
+    <!-- LANDING VIEW -->
+    <section id="view-landing">
+      <div class="grid-2">
+        <div>
+          <span class="pill">Для шукачів роботи в Україні · Українська та English</span>
+          <h1 class="hero-title">Якісне резюме за 15 хвилин з одного профілю</h1>
+          <p style="color:var(--muted); font-size:15.5px;">
+            Заповніть профіль один раз, перемикайтеся між 3 ATS-дружніми шаблонами без втрати даних,
+            користуйтеся чесними AI-підказками (лише після вашого підтвердження) та експортуйте коректний PDF і DOCX.
+          </p>
+          <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:20px;">
+            <button class="primary" onclick="navigate('register')">Створити резюме</button>
+            <button onclick="openDemo()">Спробувати демо-редактор</button>
+            <a href="/docs" target="_blank" style="text-decoration:none;"><button type="button">API (Swagger)</button></a>
+          </div>
+          <div class="grid-3" style="margin-top:24px;">
+            <div class="card" style="padding:14px;">
+              <strong>3 ATS-шаблони</strong>
+              <p style="font-size:12.5px; color:var(--muted); margin:6px 0 0;">Мінімальний, Класичний та IT без втрати даних.</p>
+            </div>
+            <div class="card" style="padding:14px;">
+              <strong>Чесний AI</strong>
+              <p style="font-size:12.5px; color:var(--muted); margin:6px 0 0;">Не вигадує факти; правка вноситься після підтвердження.</p>
+            </div>
+            <div class="card" style="padding:14px;">
+              <strong>PDF + DOCX</strong>
+              <p style="font-size:12.5px; color:var(--muted); margin:6px 0 0;">Виділюваний текст, кирилиця та зрозуміла назва файлу.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="toolbar" style="margin-bottom:10px;">
+            <strong style="font-size:13px;">Галерея шаблонів</strong>
+            <div style="display:flex; gap:6px;">
+              <button class="small primary" id="gal-btn-minimal" onclick="setGalleryTemplate('minimal')">Мінімальний</button>
+              <button class="small" id="gal-btn-classic" onclick="setGalleryTemplate('classic')">Класичний</button>
+              <button class="small" id="gal-btn-it" onclick="setGalleryTemplate('it')">IT</button>
+            </div>
+          </div>
+          <iframe id="landing-preview" class="preview-frame" style="min-height:520px;" title="Галерея шаблонів"></iframe>
+        </div>
+      </div>
+    </section>
+
+    <!-- AUTH VIEW -->
+    <section id="view-auth" class="hidden" style="max-width:460px; margin:20px auto;">
+      <div class="card">
+        <h2 id="auth-title" style="margin-top:0;">Вхід у ResumeCraft</h2>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div>
+            <label class="field-label">Email</label>
+            <input id="auth-email" type="email" placeholder="name@example.com" />
+          </div>
+          <div>
+            <label class="field-label">Пароль (мін. 8 символів)</label>
+            <input id="auth-password" type="password" placeholder="••••••••" />
+          </div>
+          <label id="auth-consent-wrap" style="display:flex; gap:8px; align-items:flex-start; font-size:12.5px; color:var(--muted);">
+            <input id="auth-consent" type="checkbox" style="width:auto; margin-top:3px;" />
+            <span>Надаю згоду на обробку персональних даних для створення та експорту резюме.</span>
+          </label>
+          <button class="primary" id="auth-submit-btn" onclick="submitAuth()">Увійти</button>
+        </div>
+        <div id="verify-box" class="notice ok hidden" style="margin-top:14px;">
+          <div><strong>Акаунт створено!</strong> Можете підтвердити email в один клік:</div>
+          <button class="small primary" style="margin-top:8px;" onclick="verifyNow()">Підтвердити email</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROFILE VIEW -->
+    <section id="view-profile" class="hidden" style="max-width:860px; margin:0 auto;">
+      <div class="card">
+        <div class="toolbar">
+          <div>
+            <h2 style="margin:0;">Єдиний профіль кандидата</h2>
+            <div style="font-size:13px; color:var(--muted);">Заповненість профілю: <strong id="prof-score">0%</strong></div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="primary" onclick="saveProfile()">Зберегти профіль</button>
+            <button onclick="navigate('editor')">Відкрити редактор</button>
+          </div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="prof-progress" style="width:0%"></div></div>
+        <p id="prof-missing" style="font-size:12px; color:var(--muted); margin-top:8px;"></p>
+      </div>
+      <div id="profile-form-host" style="margin-top:16px;"></div>
+    </section>
+
+    <!-- EDITOR / DEMO VIEW -->
+    <section id="view-editor" class="hidden">
+      <div id="demo-banner" class="notice warn hidden">
+        <strong>Демо-редактор (без збереження):</strong> тестуйте форму, 3 шаблони та перегляд. Щоб зберігати, запускати AI і завантажувати PDF/DOCX —
+        <button class="small primary" onclick="navigate('register')" style="margin-left:8px;">Зареєструватися</button>
+      </div>
+
+      <div class="card toolbar">
+        <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+          <button class="small primary" id="tpl-btn-minimal" onclick="setTemplate('minimal')">Мінімальний</button>
+          <button class="small" id="tpl-btn-classic" onclick="setTemplate('classic')">Класичний</button>
+          <button class="small" id="tpl-btn-it" onclick="setTemplate('it')">IT</button>
+          <select id="resume-lang" style="width:auto; font-size:12.5px; padding:5px 10px;" onchange="onLangChange(this.value)">
+            <option value="uk">Мова: Українська</option>
+            <option value="en">Мова: English</option>
+          </select>
+          <span id="quota-badge" class="chip hidden">AI: 10/10</span>
+          <span id="save-badge" style="font-size:12px; color:var(--ok);"></span>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+          <button class="small" id="btn-save-resume" onclick="saveResume()">Зберегти</button>
+          <button class="small primary" onclick="exportFile('pdf')">Завантажити PDF</button>
+          <button class="small" onclick="exportFile('docx')">Завантажити DOCX</button>
+        </div>
+      </div>
+
+      <div id="page-warning" class="notice warn hidden">
+        Резюме перевищує рекомендовані 2 сторінки (<span id="est-pages">3</span> стор.). Рекомендуємо скоротити текст.
+      </div>
+
+      <div class="grid-2">
+        <div id="editor-left">
+          <div id="ai-panel" class="ai-box hidden">
+            <div class="toolbar" style="margin-bottom:6px;">
+              <strong id="ai-title" style="font-size:13.5px; color:#1e3a8a;">AI-варіанти</strong>
+              <button class="small" onclick="closeAiPanel()">Відхилити</button>
+            </div>
+            <div id="ai-disclaimer" style="font-size:12px; color:#1e40af;"></div>
+            <div id="ai-variants"></div>
+          </div>
+
+          <!-- Contacts -->
+          <div class="card" style="margin-bottom:14px;">
+            <h3 style="margin:0 0 10px; font-size:15px;">Контакти та ціль</h3>
+            <div class="field-grid">
+              <input id="f-first" placeholder="Ім'я" oninput="updateField('contacts.first_name', this.value)" />
+              <input id="f-last" placeholder="Прізвище" oninput="updateField('contacts.last_name', this.value)" />
+              <input id="f-email" placeholder="Email" oninput="updateField('contacts.email', this.value)" />
+              <input id="f-phone" placeholder="Телефон (+380...)" oninput="updateField('contacts.phone', this.value)" />
+              <input id="f-loc" placeholder="Місто" oninput="updateField('contacts.location', this.value)" />
+              <input id="f-role" placeholder="Бажана посада" oninput="updateField('target_role', this.value)" />
+              <input id="f-format" placeholder="Формат роботи" oninput="updateField('work_format', this.value)" />
+              <input id="f-salary" placeholder="Бажана зарплата" oninput="updateField('desired_salary', this.value)" />
+            </div>
+          </div>
+
+          <!-- Block Order -->
+          <div class="card" style="margin-bottom:14px;">
+            <h3 style="margin:0 0 8px; font-size:14px;">Порядок блоків</h3>
+            <div id="block-order-list" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+          </div>
+
+          <!-- Summary -->
+          <div class="card" style="margin-bottom:14px;">
+            <div class="toolbar" style="margin-bottom:8px;">
+              <h3 style="margin:0; font-size:15px;">Про себе</h3>
+              <div style="display:flex; gap:6px;">
+                <button class="small" onclick="aiGenerateSummary()">AI: 3 варіанти</button>
+                <button class="small" onclick="aiEditSummary()">AI: Покращити</button>
+              </div>
+            </div>
+            <textarea id="f-summary" rows="3" placeholder="Коротко про себе..." oninput="updateField('summary', this.value)"></textarea>
+          </div>
+
+          <!-- Experience -->
+          <div class="card" style="margin-bottom:14px;">
+            <div class="toolbar" style="margin-bottom:8px;">
+              <h3 style="margin:0; font-size:15px;">Досвід роботи</h3>
+              <button class="small" onclick="addExperience()">+ Додати місце</button>
+            </div>
+            <div id="exp-list"></div>
+          </div>
+
+          <!-- Education -->
+          <div class="card" style="margin-bottom:14px;">
+            <div class="toolbar" style="margin-bottom:8px;">
+              <h3 style="margin:0; font-size:15px;">Освіта</h3>
+              <button class="small" onclick="addEducation()">+ Додати освіту</button>
+            </div>
+            <div id="edu-list"></div>
+          </div>
+
+          <!-- Skills, Languages, Links -->
+          <div class="card" style="margin-bottom:14px;">
+            <h3 style="margin:0 0 8px; font-size:15px;">Навички, мови та посилання</h3>
+            <label class="field-label">Навички (через кому, макс. 30)</label>
+            <input id="f-skills" placeholder="Python, FastAPI, TypeScript, Docker" oninput="updateSkills(this.value)" />
+            <div class="field-grid" style="margin-top:10px;">
+              <div>
+                <label class="field-label">Мови (напр.: Українська — Рідна; Англійська — B2)</label>
+                <input id="f-langs" placeholder="Українська — Рідна; Англійська — B2" oninput="updateLanguages(this.value)" />
+              </div>
+              <div>
+                <label class="field-label">Посилання (напр.: GitHub: https://...)</label>
+                <input id="f-links" placeholder="GitHub: https://github.com/..." oninput="updateLinks(this.value)" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="position:sticky; top:76px;">
+          <iframe id="editor-preview" class="preview-frame" title="Попередній перегляд резюме"></iframe>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS VIEW -->
+    <section id="view-settings" class="hidden" style="max-width:640px; margin:0 auto;">
+      <div class="card" style="margin-bottom:16px;">
+        <h2 style="margin-top:0;">Налаштування акаунта</h2>
+        <p id="settings-email" style="font-size:14px;"></p>
+        <button onclick="exportPersonalData()">Експортувати мої дані (JSON)</button>
+      </div>
+      <div class="card" style="border-color:#fecaca; background:#fef2f2;">
+        <h3 style="margin-top:0; color:#991b1b;">Видалення акаунта</h3>
+        <p style="font-size:13px; color:#7f1d1d;">Остаточно видаляє профіль, резюме, історію AI та всі експортовані PDF/DOCX файли.</p>
+        <button class="danger" onclick="deleteAccount()">Видалити акаунт назавжди</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const BLOCK_LABELS = {
+      summary: "Про себе",
+      experience: "Досвід",
+      education: "Освіта",
+      skills: "Навички",
+      languages: "Мови",
+      links: "Посилання",
+    };
+
+    const DEMO_DATA = {
+      contacts: {
+        full_name: "Аріна Бадовська",
+        first_name: "Аріна",
+        last_name: "Бадовська",
+        email: "arina.demo@example.com",
+        phone: "+380 67 123 45 67",
+        location: "Київ, Україна",
+      },
+      target_role: "Junior Python / Full-Stack Developer",
+      summary: "Студентка ІТ-напряму з досвідом розробки веб-сервісів на FastAPI та сучасного фронтенду. Вмію проєктувати REST API та доводити задачі до релізу.",
+      desired_salary: "від $800",
+      work_format: "Гібрид / Віддалено",
+      experiences: [
+        {
+          id: "exp-1",
+          company: "DUICT Digital Lab",
+          position: "Junior Web Developer",
+          start_date: "2025-02",
+          end_date: "",
+          is_current: true,
+          bullets: ["Розробила бекенд-сервіс на FastAPI з експортом PDF/DOCX та автотестами"],
+        },
+      ],
+      education: [
+        {
+          id: "edu-1",
+          institution: "Державний університет інформаційно-комунікаційних технологій",
+          degree: "Бакалавр",
+          field_of_study: "Інформаційні технології",
+          start_date: "2023-09",
+          end_date: "",
+          is_current: true,
+        },
+      ],
+      skills: ["Python", "FastAPI", "TypeScript", "Next.js", "PostgreSQL", "Docker"],
+      languages: [{ name: "Українська", level: "Рідна" }, { name: "Англійська", level: "B2" }],
+      links: [{ label: "GitHub", url: "https://github.com/resumecraft-demo" }],
+    };
+
+    const state = {
+      token: localStorage.getItem("rc_token") || "",
+      user: null,
+      view: "landing",
+      authMode: "login",
+      verifyToken: "",
+      demoMode: false,
+      galleryTemplate: "minimal",
+      templateId: "minimal",
+      language: "uk",
+      blockOrder: ["summary", "experience", "education", "skills", "languages", "links"],
+      data: JSON.parse(JSON.stringify(DEMO_DATA)),
+      aiApplyFn: null,
+      autosaveTimer: null,
+      previewTimer: null,
+    };
+
+    function showAlert(msg, type = "err") {
+      const el = document.getElementById("global-alert");
+      if (!msg) { el.classList.add("hidden"); return; }
+      el.textContent = msg;
+      el.className = `notice ${type}`;
+    }
+
+    async function apiCall(path, opts = {}) {
+      const headers = { "Content-Type": "application/json", ...(opts.headers || {}) };
+      if (state.token) headers["Authorization"] = `Bearer ${state.token}`;
+      const resp = await fetch(`/api${path}`, { ...opts, headers });
+      if (!resp.ok) {
+        let detail = `Помилка (${resp.status})`;
+        try {
+          const j = await resp.json();
+          detail = typeof j.detail === "string" ? j.detail : (j.detail?.[0]?.msg || detail);
+        } catch {}
+        throw new Error(detail);
+      }
+      return resp.json();
+    }
+
+    function renderNav() {
+      const nav = document.getElementById("nav-actions");
+      if (!state.token) {
+        nav.innerHTML = `
+          <button onclick="openDemo()">Демо-редактор</button>
+          <button onclick="navigate('login')">Увійти</button>
+          <button class="primary" onclick="navigate('register')">Створити резюме</button>
+        `;
+      } else {
+        nav.innerHTML = `
+          <button class="${state.view === 'profile' ? 'active-tab' : ''}" onclick="navigate('profile')">Профіль</button>
+          <button class="${state.view === 'editor' ? 'active-tab' : ''}" onclick="navigate('editor')">Редактор</button>
+          <button class="${state.view === 'settings' ? 'active-tab' : ''}" onclick="navigate('settings')">Налаштування</button>
+          <button onclick="logout()">Вийти</button>
+        `;
+      }
+    }
+
+    async function navigate(view) {
+      showAlert("");
+      if (view === "login" || view === "register") {
+        state.authMode = view;
+        state.view = "auth";
+        document.getElementById("auth-title").textContent = view === "login" ? "Вхід у ResumeCraft" : "Реєстрація";
+        document.getElementById("auth-submit-btn").textContent = view === "login" ? "Увійти" : "Зареєструватися";
+        document.getElementById("auth-consent-wrap").classList.toggle("hidden", view === "login");
+        document.getElementById("verify-box").classList.add("hidden");
+      } else {
+        state.view = view;
+      }
+
+      ["landing", "auth", "profile", "editor", "settings"].forEach((id) => {
+        document.getElementById(`view-${id}`).classList.toggle("hidden", state.view !== id);
+      });
+      renderNav();
+
+      if (view === "landing") await renderGalleryPreview();
+      if (view === "profile") await loadProfile();
+      if (view === "editor" && !state.demoMode) await loadResume();
+      if (view === "settings") await loadSettings();
+    }
+
+    function openDemo() {
+      state.demoMode = true;
+      state.data = JSON.parse(JSON.stringify(DEMO_DATA));
+      state.templateId = "minimal";
+      state.language = "uk";
+      state.blockOrder = ["summary", "experience", "education", "skills", "languages", "links"];
+      navigate("editor");
+      syncEditorUI();
+    }
+
+    async function renderGalleryPreview() {
+      const resp = await fetch("/api/resume/preview-html", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          template_id: state.galleryTemplate,
+          language: "uk",
+          block_order: ["summary", "experience", "education", "skills", "languages", "links"],
+          data: DEMO_DATA,
+        }),
+      });
+      document.getElementById("landing-preview").srcdoc = await resp.text();
+    }
+
+    function setGalleryTemplate(tpl) {
+      state.galleryTemplate = tpl;
+      ["minimal", "classic", "it"].forEach((id) => {
+        document.getElementById(`gal-btn-${id}`).classList.toggle("primary", id === tpl);
+      });
+      renderGalleryPreview();
+    }
+
+    async function submitAuth() {
+      showAlert("");
+      const email = document.getElementById("auth-email").value.trim();
+      const password = document.getElementById("auth-password").value;
+      const consent = document.getElementById("auth-consent").checked;
+      try {
+        if (state.authMode === "register") {
+          const res = await apiCall("/auth/register", {
+            method: "POST",
+            body: JSON.stringify({ email, password, consent_accepted: consent }),
+          });
+          state.token = res.access_token;
+          localStorage.setItem("rc_token", state.token);
+          state.verifyToken = res.verification_token_preview || "";
+          document.getElementById("verify-box").classList.remove("hidden");
+          renderNav();
+        } else {
+          const res = await apiCall("/auth/login", {
+            method: "POST",
+            body: JSON.stringify({ email, password }),
+          });
+          state.token = res.access_token;
+          localStorage.setItem("rc_token", state.token);
+          state.demoMode = false;
+          navigate("editor");
+        }
+      } catch (err) {
+        showAlert(err.message);
+      }
+    }
+
+    async function verifyNow() {
+      try {
+        await apiCall("/auth/verify-email", { method: "POST", body: JSON.stringify({ token: state.verifyToken }) });
+        showAlert("Email успішно підтверджено!", "ok");
+        state.demoMode = false;
+        setTimeout(() => navigate("editor"), 500);
+      } catch (err) {
+        showAlert(err.message);
+      }
+    }
+
+    function logout() {
+      state.token = "";
+      localStorage.removeItem("rc_token");
+      navigate("landing");
+    }
+
+    async function loadProfile() {
+      try {
+        const res = await apiCall("/profile");
+        state.data = res.data;
+        document.getElementById("prof-score").textContent = `${res.completeness_score}%`;
+        document.getElementById("prof-progress").style.width = `${res.completeness_score}%`;
+        document.getElementById("prof-missing").textContent = res.missing_blocks.length
+          ? `Рекомендуємо заповнити: ${res.missing_blocks.join(", ")}`
+          : "Профіль заповнений на 100%!";
+        document.getElementById("profile-form-host").innerHTML = `
+          <div class="card">
+            <p style="font-size:13.5px; color:var(--muted); margin-top:0;">
+              Контакти, досвід, освіта, навички, мови та посилання редагуються у зручному вигляді — натисніть «Зберегти профіль» або перейдіть у Редактор.
+            </p>
+            <div class="field-grid">
+              <div><label class="field-label">Ім'я</label><input value="${esc(state.data.contacts.first_name)}" oninput="state.data.contacts.first_name=this.value; state.data.contacts.full_name=(this.value+' '+state.data.contacts.last_name).trim()" /></div>
+              <div><label class="field-label">Прізвище</label><input value="${esc(state.data.contacts.last_name)}" oninput="state.data.contacts.last_name=this.value; state.data.contacts.full_name=(state.data.contacts.first_name+' '+this.value).trim()" /></div>
+              <div><label class="field-label">Email</label><input value="${esc(state.data.contacts.email)}" oninput="state.data.contacts.email=this.value" /></div>
+              <div><label class="field-label">Телефон</label><input value="${esc(state.data.contacts.phone)}" oninput="state.data.contacts.phone=this.value" /></div>
+              <div><label class="field-label">Бажана посада</label><input value="${esc(state.data.target_role)}" oninput="state.data.target_role=this.value" /></div>
+              <div><label class="field-label">Місто</label><input value="${esc(state.data.contacts.location)}" oninput="state.data.contacts.location=this.value" /></div>
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        showAlert(err.message);
+      }
+    }
+
+    async function saveProfile() {
+      try {
+        const res = await apiCall("/profile?sync_resume=true", { method: "PUT", body: JSON.stringify(state.data) });
+        document.getElementById("prof-score").textContent = `${res.completeness_score}%`;
+        document.getElementById("prof-progress").style.width = `${res.completeness_score}%`;
+        showAlert("Профіль збережено та синхронізовано з резюме.", "ok");
+      } catch (err) {
+        showAlert(err.message);
+      }
+    }
+
+    async function loadResume() {
+      try {
+        state.demoMode = false;
+        const [res, q] = await Promise.all([apiCall("/resume"), apiCall("/ai/quota")]);
+        state.templateId = res.template_id;
+        state.language = res.language;
+        state.blockOrder = res.block_order;
+        state.data = res.data;
+        updateQuotaBadge(q);
+        updatePageWarning(res.estimated_pages, res.page_warning);
+        syncEditorUI();
+      } catch (err) {
+        showAlert(err.message);
+      }
+    }
+
+    function updateQuotaBadge(q) {
+      const el = document.getElementById("quota-badge");
+      if (state.demoMode || !q) { el.classList.add("hidden"); return; }
+      el.classList.remove("hidden");
+      el.textContent = `AI: ${q.remaining_today}/${q.daily_limit} на добу`;
+    }
+
+    function updatePageWarning(pages, warn) {
+      document.getElementById("est-pages").textContent = pages;
+      document.getElementById("page-warning").classList.toggle("hidden", !warn);
+    }
+
+    function esc(s) {
+      return String(s || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    }
+
+    function syncEditorUI() {
+      document.getElementById("demo-banner").classList.toggle("hidden", !state.demoMode);
+      document.getElementById("btn-save-resume").classList.toggle("hidden", state.demoMode);
+      ["minimal", "classic", "it"].forEach((id) => {
+        document.getElementById(`tpl-btn-${id}`).classList.toggle("primary", id === state.templateId);
+      });
+      document.getElementById("resume-lang").value = state.language;
+
+      const d = state.data;
+      document.getElementById("f-first").value = d.contacts.first_name || "";
+      document.getElementById("f-last").value = d.contacts.last_name || "";
+      document.getElementById("f-email").value = d.contacts.email || "";
+      document.getElementById("f-phone").value = d.contacts.phone || "";
+      document.getElementById("f-loc").value = d.contacts.location || "";
+      document.getElementById("f-role").value = d.target_role || "";
+      document.getElementById("f-format").value = d.work_format || "";
+      document.getElementById("f-salary").value = d.desired_salary || "";
+      document.getElementById("f-summary").value = d.summary || "";
+      document.getElementById("f-skills").value = (d.skills || []).join(", ");
+      document.getElementById("f-langs").value = (d.languages || []).map((l) => `${l.name} — ${l.level}`).join("; ");
+      document.getElementById("f-links").value = (d.links || []).map((l) => `${l.label}: ${l.url}`).join("; ");
+
+      renderBlockOrder();
+      renderExperiences();
+      renderEducation();
+      schedulePreview();
+    }
+
+    function renderBlockOrder() {
+      const host = document.getElementById("block-order-list");
+      host.innerHTML = state.blockOrder
+        .map((b, i) => `
+          <span class="chip">
+            ${BLOCK_LABELS[b] || b}
+            <button class="small" onclick="moveBlock(${i}, -1)" ${i === 0 ? "disabled" : ""}>↑</button>
+            <button class="small" onclick="moveBlock(${i}, 1)" ${i === state.blockOrder.length - 1 ? "disabled" : ""}>↓</button>
+          </span>
+        `)
+        .join("");
+    }
+
+    function moveBlock(i, dir) {
+      const j = i + dir;
+      if (j < 0 || j >= state.blockOrder.length) return;
+      [state.blockOrder[i], state.blockOrder[j]] = [state.blockOrder[j], state.blockOrder[i]];
+      renderBlockOrder();
+      schedulePreview();
+      scheduleAutosave();
+    }
+
+    function renderExperiences() {
+      const host = document.getElementById("exp-list");
+      host.innerHTML = (state.data.experiences || [])
+        .map((exp, ei) => `
+          <div class="exp-box">
+            <div class="toolbar" style="margin-bottom:6px;">
+              <strong style="font-size:12.5px;">Досвід #${ei + 1}</strong>
+              <button class="small" onclick="removeExp(${ei})">Видалити</button>
+            </div>
+            <div class="field-grid">
+              <input placeholder="Посада" value="${esc(exp.position)}" oninput="state.data.experiences[${ei}].position=this.value; onDataMutated()" />
+              <input placeholder="Компанія" value="${esc(exp.company)}" oninput="state.data.experiences[${ei}].company=this.value; onDataMutated()" />
+              <input type="month" value="${esc(exp.start_date)}" oninput="state.data.experiences[${ei}].start_date=this.value; onDataMutated()" />
+              <input type="month" value="${esc(exp.end_date)}" ${exp.is_current ? "disabled" : ""} oninput="state.data.experiences[${ei}].end_date=this.value; onDataMutated()" />
+            </div>
+            <label style="font-size:12px; display:flex; gap:6px; align-items:center; margin-top:6px;">
+              <input type="checkbox" style="width:auto;" ${exp.is_current ? "checked" : ""} onchange="state.data.experiences[${ei}].is_current=this.checked; if(this.checked) state.data.experiences[${ei}].end_date=''; renderExperiences(); onDataMutated()" />
+              Працюю зараз
+            </label>
+            <div style="margin-top:8px;">
+              ${(exp.bullets || []).map((b, bi) => `
+                <div style="display:flex; gap:6px; margin-top:6px;">
+                  <input value="${esc(b)}" placeholder="Досягнення..." oninput="state.data.experiences[${ei}].bullets[${bi}]=this.value; onDataMutated()" />
+                  <button class="small" onclick="aiImproveBullet(${ei}, ${bi})">AI</button>
+                </div>
+              `).join("")}
+              <button class="small" style="margin-top:6px;" onclick="state.data.experiences[${ei}].bullets.push(''); renderExperiences()">+ Пункт</button>
+            </div>
+          </div>
+        `)
+        .join("");
+    }
+
+    function renderEducation() {
+      const host = document.getElementById("edu-list");
+      host.innerHTML = (state.data.education || [])
+        .map((edu, idx) => `
+          <div class="exp-box">
+            <div class="toolbar" style="margin-bottom:6px;">
+              <strong style="font-size:12.5px;">Освіта #${idx + 1}</strong>
+              <button class="small" onclick="state.data.education.splice(${idx},1); renderEducation(); onDataMutated()">Видалити</button>
+            </div>
+            <div class="field-grid">
+              <input placeholder="Заклад" value="${esc(edu.institution)}" oninput="state.data.education[${idx}].institution=this.value; onDataMutated()" />
+              <input placeholder="Ступінь" value="${esc(edu.degree)}" oninput="state.data.education[${idx}].degree=this.value; onDataMutated()" />
+              <input placeholder="Спеціальність" value="${esc(edu.field_of_study)}" oninput="state.data.education[${idx}].field_of_study=this.value; onDataMutated()" />
+            </div>
+          </div>
+        `)
+        .join("");
+    }
+
+    function addExperience() {
+      if (state.data.experiences.length >= 15) { showAlert("Максимум 15 місць роботи"); return; }
+      state.data.experiences.push({ id: `e-${Date.now()}`, company: "", position: "", start_date: "", end_date: "", is_current: false, bullets: [""] });
+      renderExperiences();
+      onDataMutated();
+    }
+
+    function removeExp(idx) {
+      state.data.experiences.splice(idx, 1);
+      renderExperiences();
+      onDataMutated();
+    }
+
+    function addEducation() {
+      state.data.education.push({ id: `ed-${Date.now()}`, institution: "", degree: "", field_of_study: "", start_date: "", end_date: "", is_current: false });
+      renderEducation();
+      onDataMutated();
+    }
+
+    function updateField(path, value) {
+      if (path.startsWith("contacts.")) {
+        const key = path.split(".")[1];
+        state.data.contacts[key] = value;
+        if (key === "first_name" || key === "last_name") {
+          state.data.contacts.full_name = `${state.data.contacts.first_name || ""} ${state.data.contacts.last_name || ""}`.trim();
+        }
+      } else {
+        state.data[path] = value;
+      }
+      onDataMutated();
+    }
+
+    function updateSkills(val) {
+      state.data.skills = val.split(",").map((s) => s.trim()).filter(Boolean).slice(0, 30);
+      onDataMutated();
+    }
+
+    function updateLanguages(val) {
+      state.data.languages = val.split(";").map((item) => {
+        const [name, level = ""] = item.split("—").map((x) => x.trim());
+        return { name, level };
+      }).filter((x) => x.name);
+      onDataMutated();
+    }
+
+    function updateLinks(val) {
+      state.data.links = val.split(";").map((item) => {
+        const idx = item.indexOf(":");
+        if (idx === -1) return { label: "Link", url: item.trim() };
+        return { label: item.slice(0, idx).trim(), url: item.slice(idx + 1).trim() };
+      }).filter((x) => x.url);
+      onDataMutated();
+    }
+
+    function setTemplate(tpl) {
+      state.templateId = tpl;
+      ["minimal", "classic", "it"].forEach((id) => {
+        document.getElementById(`tpl-btn-${id}`).classList.toggle("primary", id === tpl);
+      });
+      onDataMutated();
+    }
+
+    function onLangChange(lang) {
+      state.language = lang;
+      onDataMutated();
+    }
+
+    function onDataMutated() {
+      schedulePreview();
+      scheduleAutosave();
+    }
+
+    function schedulePreview() {
+      if (state.previewTimer) clearTimeout(state.previewTimer);
+      state.previewTimer = setTimeout(async () => {
+        const resp = await fetch("/api/resume/preview-html", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            template_id: state.templateId,
+            language: state.language,
+            block_order: state.blockOrder,
+            data: state.data,
+          }),
+        });
+        document.getElementById("editor-preview").srcdoc = await resp.text();
+      }, 220);
+    }
+
+    function scheduleAutosave() {
+      if (state.demoMode || !state.token) return;
+      if (state.autosaveTimer) clearTimeout(state.autosaveTimer);
+      state.autosaveTimer = setTimeout(() => saveResume(true), 900);
+    }
+
+    async function saveResume(silent = false) {
+      if (state.demoMode) return;
+      try {
+        const res = await apiCall("/resume", {
+          method: "PUT",
+          body: JSON.stringify({
+            title: "Моє резюме",
+            template_id: state.templateId,
+            language: state.language,
+            block_order: state.blockOrder,
+            data: state.data,
+          }),
+        });
+        document.getElementById("save-badge").textContent = silent ? "Автозбережено" : "Збережено";
+        updatePageWarning(res.estimated_pages, res.page_warning);
+        showAlert("");
+      } catch (err) {
+        showAlert(err.message);
+      }
+    }
+
+    function showAiPanel(title, res, applyFn) {
+      state.aiApplyFn = applyFn;
+      updateQuotaBadge(res.quota);
+      document.getElementById("ai-title").textContent = title;
+      document.getElementById("ai-disclaimer").textContent = res.disclaimer;
+      const host = document.getElementById("ai-variants");
+      host.innerHTML = "";
+      res.variants.forEach((v) => {
+        const row = document.createElement("div");
+        row.className = "ai-variant";
+        const p = document.createElement("span");
+        p.style.fontSize = "13.5px";
+        p.textContent = v;
+        const btn = document.createElement("button");
+        btn.className = "small primary";
+        btn.textContent = "Прийняти";
+        btn.onclick = () => {
+          applyFn(v);
+          closeAiPanel();
+        };
+        row.appendChild(p);
+        row.appendChild(btn);
+        host.appendChild(row);
+      });
+      document.getElementById("ai-panel").classList.remove("hidden");
+    }
+
+    function closeAiPanel() {
+      document.getElementById("ai-panel").classList.add("hidden");
+    }
+
+    async function aiGenerateSummary() {
+      if (state.demoMode) { showAlert("AI-помічник доступний після входу або реєстрації."); return; }
+      try {
+        const res = await apiCall("/ai/generate-summary", {
+          method: "POST",
+          body: JSON.stringify({
+            target_role: state.data.target_role,
+            experiences_summary: (state.data.experiences || []).map((e) => `${e.position} (${e.company})`),
+            skills: state.data.skills || [],
+            languages: (state.data.languages || []).map((l) => `${l.name} ${l.level}`),
+            language: state.language,
+          }),
+        });
+        showAiPanel("Варіанти «Про себе»", res, (chosen) => {
+          state.data.summary = chosen;
+          syncEditorUI();
+          scheduleAutosave();
+        });
+      } catch (err) {
+        showAlert(err.message);
+      }
+    }
+
+    async function aiEditSummary() {
+      if (state.demoMode) { showAlert("AI-помічник доступний після входу або реєстрації."); return; }
+      try {
+        const res = await apiCall("/ai/edit-text", {
+          method: "POST",
+          body: JSON.stringify({
+            selected_text: state.data.summary,
+            instruction: "Зроби формулювання чіткішим і професійнішим",
+            language: state.language,
+          }),
+        });
+        showAiPanel("Покращення тексту «Про себе»", res, (chosen) => {
+          state.data.summary = chosen;
+          syncEditorUI();
+          scheduleAutosave();
+        });
+      } catch (err) {
+        showAlert(err.message);
+      }
+    }
+
+    async function aiImproveBullet(ei, bi) {
+      if (state.demoMode) { showAlert("AI-помічник доступний після входу або реєстрації."); return; }
+      const exp = state.data.experiences[ei];
+      try {
+        const res = await apiCall("/ai/improve-bullet", {
+          method: "POST",
+          body: JSON.stringify({
+            bullet: exp.bullets[bi],
+            role_title: exp.position,
+            company: exp.company,
+            skills: state.data.skills || [],
+            language: state.language,
+          }),
+        });
+        showAiPanel("Покращення пункту досвіду", res, (chosen) => {
+          state.data.experiences[ei].bullets[bi] = chosen;
+          syncEditorUI();
+          scheduleAutosave();
+        });
+      } catch (err) {
+        showAlert(err.message);
+      }
+    }
+
+    async function exportFile(format) {
+      if (state.demoMode) { showAlert("Експорт PDF/DOCX доступний після реєстрації."); return; }
+      try {
+        const resp = await fetch("/api/export", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${state.token}` },
+          body: JSON.stringify({
+            format,
+            template_id: state.templateId,
+            language: state.language,
+            block_order: state.blockOrder,
+            data: state.data,
+            use_ai_filename: true,
+          }),
+        });
+        if (!resp.ok) throw new Error("Не вдалося експортувати файл");
+        const filename = resp.headers.get("X-Export-Filename") || `Resume.${format}`;
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        showAlert(`Файл завантажено: ${filename}`, "ok");
+      } catch (err) {
+        showAlert(err.message);
+      }
+    }
+
+    async function loadSettings() {
+      try {
+        const u = await apiCall("/auth/me");
+        document.getElementById("settings-email").innerHTML =
+          `Email: <strong>${esc(u.email)}</strong> (${u.is_email_verified ? "Підтверджено" : "Не підтверджено"})`;
+      } catch (err) {
+        showAlert(err.message);
+      }
+    }
+
+    async function exportPersonalData() {
+      try {
+        const data = await apiCall("/settings/export-data");
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "resumecraft_personal_data.json";
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        showAlert(err.message);
+      }
+    }
+
+    async function deleteAccount() {
+      if (!confirm("Точно видалити акаунт і всі файли без відновлення?")) return;
+      try {
+        await apiCall("/settings/account", { method: "DELETE" });
+        logout();
+        showAlert("Акаунт і всі дані остаточно видалено.", "ok");
+      } catch (err) {
+        showAlert(err.message);
+      }
+    }
+
+    // Boot
+    (async function init() {
+      if (state.token) {
+        try {
+          await apiCall("/auth/me");
+          await navigate("editor");
+          return;
+        } catch {
+          state.token = "";
+          localStorage.removeItem("rc_token");
+        }
+      }
+      await navigate("landing");
+    })();
+  </script>
+</body>
+</html>

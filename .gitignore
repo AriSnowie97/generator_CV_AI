@@ -1,0 +1,27 @@
+# Python / FastAPI
+backend/.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite3
+*.db
+.pytest_cache/
+backend/local_storage/
+backend/exports/
+
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/dist/
+
+# Env & secrets
+.env
+backend/.env
+frontend/.env
+frontend/.env.local
+
+# Logs & OS
+*.log
+.DS_Store
+Thumbs.db
