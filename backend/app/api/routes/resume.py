@@ -73,7 +73,7 @@ def preview_html(payload: ResumePreviewRequest):
         payload.template_id,
         payload.language,
         payload.block_order,
-        show_branding=payload.show_branding,
+        show_branding=True,
     )
     return HTMLResponse(content=html_str)
 

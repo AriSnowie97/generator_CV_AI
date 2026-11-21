@@ -921,10 +921,6 @@
             <span id="ats-score-pill" class="ats-pill">ATS: —</span>
           </button>
           <span id="quota-badge" class="chip hidden">AI: 10/10</span>
-          <label style="display:inline-flex; align-items:center; gap:5px; font-size:12px; color:var(--muted); cursor:pointer;">
-            <input type="checkbox" id="chk-branding" checked style="width:auto; margin:0;" onchange="state.showBranding=this.checked; schedulePreview()" />
-            <span>Підпис ResumeCraft™</span>
-          </label>
           <span id="save-badge" style="font-size:12px; font-weight:600; color:var(--ok);"></span>
         </div>
       </div>
@@ -1185,7 +1181,6 @@
       templateId: "minimal",
       language: "uk",
       rightTab: "preview",
-      showBranding: true,
       blockOrder: ["summary", "experience", "education", "skills", "languages", "links"],
       data: JSON.parse(JSON.stringify(DEMO_DATA)),
       autosaveTimer: null,
@@ -1733,7 +1728,6 @@
             language: state.language,
             block_order: state.blockOrder,
             data: state.data,
-            show_branding: state.showBranding,
           }),
         });
         const iframe = document.getElementById("editor-preview");
@@ -1927,7 +1921,6 @@
             block_order: state.blockOrder,
             data: state.data,
             use_ai_filename: true,
-            show_branding: state.showBranding,
           }),
         });
         if (!resp.ok) throw new Error("Не вдалося експортувати файл");
