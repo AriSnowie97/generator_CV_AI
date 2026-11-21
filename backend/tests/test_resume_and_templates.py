@@ -143,9 +143,34 @@ def test_ats_check_endpoint_and_vacancy_keywords(client):
     assert resp.status_code == 200, resp.text
     body = resp.json()
     assert body["score"] >= 85
-    assert len(body["checks"]) == 8
+    assert len(body["checks"]) == 9
     assert any(k.lower() == "fastapi" for k in body["matched_keywords"])
     assert any(k.lower() == "kubernetes" for k in body["missing_keywords"])
+
+    # Verify ATS photo warning & show_photo toggle
+    sample_png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+    with_photo = {
+        "data": {**payload["data"], "contacts": {**payload["data"]["contacts"], "photo_url": sample_png, "show_photo": True}}
+    }
+    res_photo_on = client.post("/api/resume/ats-check", json=with_photo)
+    assert res_photo_on.status_code == 200
+    photo_chk_on = next(c for c in res_photo_on.json()["checks"] if c["key"] == "photo_ats")
+    assert photo_chk_on["passed"] is False
+
+    prev_on = client.post("/api/resume/preview-html", json={"template_id": "minimal", "language": "uk", "data": with_photo["data"]})
+    assert "<img class=\"cv-photo\"" in prev_on.text
+
+    with_photo_hidden = {
+        "data": {**payload["data"], "contacts": {**payload["data"]["contacts"], "photo_url": sample_png, "show_photo": False}}
+    }
+    res_photo_off = client.post("/api/resume/ats-check", json=with_photo_hidden)
+    assert res_photo_off.status_code == 200
+    photo_chk_off = next(c for c in res_photo_off.json()["checks"] if c["key"] == "photo_ats")
+    assert photo_chk_off["passed"] is True
+    assert res_photo_off.json()["score"] == res_photo_on.json()["score"] + 5
+
+    prev_off = client.post("/api/resume/preview-html", json={"template_id": "minimal", "language": "uk", "data": with_photo_hidden["data"]})
+    assert "<img class=\"cv-photo\"" not in prev_off.text
 
     # Sparse resume without education, skills, or bullets must score honestly low (< 45)
     sparse = client.post(

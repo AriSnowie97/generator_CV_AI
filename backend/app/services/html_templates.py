@@ -378,7 +378,7 @@ def render_resume_html(
     sections_html = "".join(_render_section(b, data, labels, template_id) for b in block_order)
     brand_text = "Створено в ResumeCraft™" if language == "uk" else "Created with ResumeCraft™"
     brand_html = f'<footer class="cv-brand">{brand_text}</footer>' if show_branding else ""
-    photo_uri = (data.contacts.photo_url or "").strip()
+    photo_uri = (data.contacts.photo_url or "").strip() if data.contacts.show_photo else ""
     photo_html = (
         f'<img class="cv-photo" src="{photo_uri}" alt="{_e(name)}" />'
         if photo_uri.startswith("data:image/")

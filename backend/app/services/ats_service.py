@@ -122,6 +122,7 @@ def analyze_ats(req: ATSCheckRequest) -> ATSCheckResponse:
         ]
     )
     length_ok = (not page_warning) and filled_core_sections >= 4
+    has_visible_photo = bool((data.contacts.photo_url or "").strip()) and data.contacts.show_photo
 
     checks = [
         ATSCheckItem(
@@ -192,6 +193,16 @@ def analyze_ats(req: ATSCheckRequest) -> ATSCheckResponse:
             if not length_ok
             else f"Одноколонкова структура без таблиць, {filled_core_sections}/5 секцій, обсяг {pages} стор. A4 — ідеально для ATS.",
         ),
+        ATSCheckItem(
+            key="photo_ats",
+            label="Сумісність із західними ATS (без фото)",
+            passed=not has_visible_photo,
+            tip=(
+                "У резюме увімкнено фото. Для українських та європейських компаній це нормально, але західні ATS-системи можуть знижувати бал — ви можете сховати фото одним кліком у блоці «Контакти» (воно залишиться у профілі)."
+                if has_visible_photo
+                else "Зображення не заважають парсеру — повна сумісність із міжнародними та суворими ATS-системами."
+            ),
+        ),
     ]
 
     weights = {
@@ -203,8 +214,11 @@ def analyze_ats(req: ATSCheckRequest) -> ATSCheckResponse:
         "metrics": 10,
         "skills": 15,
         "structure_length": 10,
+        "photo_ats": 0,
     }
     base_score = sum(weights[c.key] for c in checks if c.passed)
+    if has_visible_photo:
+        base_score = max(0, base_score - 5)
 
     matched: list[str] = []
     missing: list[str] = []

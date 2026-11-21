@@ -120,12 +120,16 @@ def set_profile_photo(db: Session, user: User, photo_data_uri: str) -> Profile:
     profile = get_or_create_profile(db, user)
     p_data = ProfileData.model_validate(profile.data_json or {})
     p_data.contacts.photo_url = photo_data_uri
+    if photo_data_uri:
+        p_data.contacts.show_photo = True
     profile.data_json = p_data.model_dump()
 
     resume = db.query(Resume).filter(Resume.user_id == user.id).first()
     if resume:
         r_data = ProfileData.model_validate(resume.data_json or {})
         r_data.contacts.photo_url = photo_data_uri
+        if photo_data_uri:
+            r_data.contacts.show_photo = True
         resume.data_json = r_data.model_dump()
 
     db.commit()

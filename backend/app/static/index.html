@@ -555,6 +555,19 @@
       overflow: hidden;
     }
     .avatar-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .photo-toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-2);
+      margin-top: 6px;
+      cursor: pointer;
+      user-select: none;
+      flex-wrap: wrap;
+    }
+    .photo-toggle-label.hidden { display: none; }
 
     /* Experience & Education boxes */
     .sub-card {
@@ -1004,6 +1017,11 @@
             <div style="flex:1 1 180px;">
               <div style="font-size:13px; font-weight:700;">Фото для резюме</div>
               <div style="font-size:12px; color:var(--muted);">JPG, PNG або WebP (до 5 МБ) · зберігається у профілі та вставляється у PDF і DOCX</div>
+              <label id="editor-photo-toggle-wrap" class="photo-toggle-label hidden">
+                <input type="checkbox" id="editor-show-photo" checked onchange="toggleShowPhoto(this.checked)" style="width:auto; margin:0;" />
+                <span>Показувати фото в резюме</span>
+                <span style="font-weight:500; color:var(--muted);">(вимкніть для суворих ATS)</span>
+              </label>
             </div>
             <div class="toolbar-group">
               <input type="file" id="editor-photo-input" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="handlePhotoFileSelect(event)" />
@@ -1595,16 +1613,31 @@
 
     function renderPhotoPreviews() {
       const uri = (state.data.contacts && state.data.contacts.photo_url) || "";
+      const show = !state.data.contacts || state.data.contacts.show_photo !== false;
       const html = uri ? `<img src="${uri}" alt="Фото кандидата" />` : "👤";
       const edBox = document.getElementById("editor-photo-preview");
-      if (edBox) edBox.innerHTML = html;
+      if (edBox) {
+        edBox.innerHTML = html;
+        edBox.style.opacity = uri && !show ? "0.42" : "1";
+      }
       const edRem = document.getElementById("editor-photo-remove");
       if (edRem) edRem.classList.toggle("hidden", !uri);
+      const edToggleWrap = document.getElementById("editor-photo-toggle-wrap");
+      if (edToggleWrap) edToggleWrap.classList.toggle("hidden", !uri);
+      const edToggle = document.getElementById("editor-show-photo");
+      if (edToggle) edToggle.checked = show;
 
       const prBox = document.getElementById("profile-photo-preview");
       if (prBox) prBox.innerHTML = html;
       const prRem = document.getElementById("profile-photo-remove");
       if (prRem) prRem.classList.toggle("hidden", !uri);
+    }
+
+    function toggleShowPhoto(checked) {
+      if (!state.data.contacts) state.data.contacts = {};
+      state.data.contacts.show_photo = !!checked;
+      renderPhotoPreviews();
+      onDataMutated();
     }
 
     function resizePhotoClientSide(file) {
@@ -1659,14 +1692,17 @@
           }
           const updated = await resp.json();
           state.data.contacts.photo_url = updated.data.contacts.photo_url || "";
+          state.data.contacts.show_photo = true;
           renderPhotoPreviews();
-          if (state.view === "editor") schedulePreview();
+          if (state.view === "editor") { schedulePreview(); scheduleAtsCheck(); }
           showAlert("Фото завантажено в профіль та автоматично додано до резюме!", "ok");
         } else {
           const dataUri = await resizePhotoClientSide(file);
           state.data.contacts.photo_url = dataUri;
+          state.data.contacts.show_photo = true;
           renderPhotoPreviews();
           schedulePreview();
+          scheduleAtsCheck();
           showAlert("Фото додано у демо-резюме (увійдіть, щоб зберегти в профілі).", "ok");
         }
       } catch (err) {
@@ -1682,7 +1718,7 @@
         }
         state.data.contacts.photo_url = "";
         renderPhotoPreviews();
-        if (state.view === "editor") schedulePreview();
+        if (state.view === "editor") { schedulePreview(); scheduleAtsCheck(); }
         showAlert("Фото видалено з профілю та резюме.", "ok");
       } catch (err) {
         showAlert(err.message);

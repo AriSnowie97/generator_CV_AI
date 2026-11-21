@@ -37,6 +37,7 @@ class ContactInfo(BaseModel):
     phone: str = Field(default="", max_length=30)
     location: str = Field(default="", max_length=120)
     photo_url: str = Field(default="", max_length=700_000)
+    show_photo: bool = True
 
     @field_validator("photo_url")
     @classmethod
