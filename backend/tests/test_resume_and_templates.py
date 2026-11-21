@@ -116,3 +116,49 @@ def test_ats_check_endpoint_and_vacancy_keywords(client):
     assert len(body["checks"]) == 7
     assert any(k.lower() == "fastapi" for k in body["matched_keywords"])
     assert any(k.lower() == "kubernetes" for k in body["missing_keywords"])
+
+
+def test_resume_auto_translation_uk_to_en_and_pii_safety(client):
+    payload = {
+        "source_language": "uk",
+        "target_language": "en",
+        "data": {
+            "contacts": {
+                "first_name": "Аріна",
+                "last_name": "Бадовська",
+                "full_name": "Аріна Бадовська",
+                "email": "arina@example.com",
+                "phone": "+380671234567",
+                "location": "Київ, Україна",
+            },
+            "target_role": "Junior Python Developer",
+            "summary": "Студентка ІТ-напряму.",
+            "desired_salary": "від $800",
+            "work_format": "Гібрид / Віддалено",
+            "education": [
+                {
+                    "institution": "Державний університет інформаційно-комунікаційних технологій",
+                    "degree": "Бакалавр",
+                    "field_of_study": "Інформаційні технології",
+                    "start_date": "2023-09",
+                    "is_current": True,
+                }
+            ],
+            "skills": ["Python", "FastAPI", "Docker"],
+            "languages": [{"name": "Українська", "level": "Рідна"}],
+        },
+    }
+    resp = client.post("/api/resume/translate", json=payload)
+    assert resp.status_code == 200, resp.text
+    out = resp.json()["data"]
+    assert out["contacts"]["first_name"] == "Arina"
+    assert out["contacts"]["last_name"] == "Badovska"
+    assert out["contacts"]["email"] == "arina@example.com"
+    assert out["contacts"]["phone"] == "+380671234567"
+    assert out["contacts"]["location"] == "Kyiv, Ukraine"
+    assert out["work_format"] == "Hybrid / Remote"
+    assert out["desired_salary"] == "from $800"
+    assert out["education"][0]["degree"] == "Bachelor's Degree"
+    assert out["skills"] == ["Python", "FastAPI", "Docker"]
+    assert out["languages"][0]["name"] == "Ukrainian"
+    assert out["languages"][0]["level"] == "Native"

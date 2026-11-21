@@ -11,6 +11,11 @@ from app.schemas.profile import ProfileData
 from app.schemas.resume import ResumePreviewRequest, ResumeResponse, ResumeUpdateRequest
 from app.services.ats_service import ATSCheckRequest, ATSCheckResponse, analyze_ats
 from app.services.html_templates import render_resume_html
+from app.services.translate_service import (
+    TranslateResumeRequest,
+    TranslateResumeResponse,
+    translate_resume_data,
+)
 from app.services.resume_service import (
     estimate_pages,
     get_or_create_resume,
@@ -71,3 +76,9 @@ def preview_html(payload: ResumePreviewRequest):
 def ats_check(payload: ATSCheckRequest):
     """Evaluate ATS readiness score, structural checks, and optional vacancy keyword match."""
     return analyze_ats(payload)
+
+
+@router.post("/translate", response_model=TranslateResumeResponse)
+async def translate_resume(payload: TranslateResumeRequest):
+    """Automatically translate resume content between Ukrainian and English without leaking PII."""
+    return await translate_resume_data(payload)

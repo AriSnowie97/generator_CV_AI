@@ -672,6 +672,12 @@
           <option value="uk">Мова: Українська</option>
           <option value="en">Мова: English</option>
         </select>
+        <button class="small soft-brand" id="btn-auto-translate" onclick="translateCurrentResume(state.language === 'uk' ? 'en' : 'uk', state.language)" title="Автоматично перекласти вміст резюме">
+          🌐 Автопереклад
+        </button>
+        <button class="small hidden" id="btn-undo-translate" onclick="undoTranslation()" title="Повернути текст до перекладу">
+          ↩ Оригінал
+        </button>
         <button class="small" id="ats-score-btn" onclick="setRightTab('ats')" title="Відкрити ATS-перевірку">
           <span id="ats-score-pill" class="ats-pill" style="padding:2px 8px; border:none;">ATS: —</span>
         </button>
@@ -1353,9 +1359,62 @@
       onDataMutated();
     }
 
-    function onLangChange(lang) {
+    async function onLangChange(lang) {
+      const prevLang = state.language;
+      if (lang === prevLang) return;
       state.language = lang;
-      onDataMutated();
+      await translateCurrentResume(lang, prevLang);
+    }
+
+    async function translateCurrentResume(targetLang, sourceLang) {
+      const src = sourceLang || (targetLang === "en" ? "uk" : "en");
+      const btn = document.getElementById("btn-auto-translate");
+      const origLabel = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "⏳ Перекладаю...";
+      showAlert("");
+      try {
+        state.preTranslateSnapshot = {
+          language: src,
+          data: JSON.parse(JSON.stringify(state.data)),
+        };
+        const res = await apiCall("/resume/translate", {
+          method: "POST",
+          body: JSON.stringify({
+            data: state.data,
+            source_language: src,
+            target_language: targetLang,
+          }),
+        });
+        state.language = targetLang;
+        state.data = res.data;
+        document.getElementById("resume-lang").value = targetLang;
+        document.getElementById("btn-undo-translate").classList.remove("hidden");
+        syncEditorUI();
+        scheduleAutosave();
+        showAlert(
+          targetLang === "en"
+            ? `Резюме автоматично перекладено англійською (${res.translated_fields} полів).`
+            : `Резюме автоматично перекладено українською (${res.translated_fields} полів).`,
+          "ok"
+        );
+      } catch (err) {
+        showAlert("Не вдалося перекласти резюме: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = origLabel;
+      }
+    }
+
+    function undoTranslation() {
+      if (!state.preTranslateSnapshot) return;
+      state.language = state.preTranslateSnapshot.language;
+      state.data = state.preTranslateSnapshot.data;
+      state.preTranslateSnapshot = null;
+      document.getElementById("btn-undo-translate").classList.add("hidden");
+      syncEditorUI();
+      scheduleAutosave();
+      showAlert("Повернуто оригінальний текст до перекладу.", "ok");
     }
 
     function onDataMutated() {
