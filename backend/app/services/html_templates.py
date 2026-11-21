@@ -14,8 +14,8 @@ SECTION_TITLES = {
         "languages": "Мови",
         "links": "Посилання",
         "present": "дотепер",
-        "salary": "Бажана зарплата",
-        "format": "Формат роботи",
+        "salary": "Очікування",
+        "format": "Формат",
     },
     "en": {
         "summary": "Summary",
@@ -26,7 +26,7 @@ SECTION_TITLES = {
         "links": "Links",
         "present": "Present",
         "salary": "Desired salary",
-        "format": "Work format",
+        "format": "Format",
     },
 }
 
@@ -50,7 +50,12 @@ def _format_dates(start: str, end: str, is_current: bool, present_label: str) ->
     return s or e
 
 
-def _render_section(block_key: str, data: ProfileData, labels: dict[str, str]) -> str:
+def _render_section(
+    block_key: str,
+    data: ProfileData,
+    labels: dict[str, str],
+    template_id: Literal["minimal", "classic", "it"],
+) -> str:
     if block_key == "summary":
         if not data.summary.strip():
             return ""
@@ -69,11 +74,12 @@ def _render_section(block_key: str, data: ProfileData, labels: dict[str, str]) -
             dates = _format_dates(exp.start_date, exp.end_date, exp.is_current, labels["present"])
             bullets = "".join(f"<li>{_e(b)}</li>" for b in exp.bullets if b.strip())
             bullets_html = f"<ul>{bullets}</ul>" if bullets else ""
+            company_part = f" <span class='company-sep'>|</span> <span class='company-name'>{_e(exp.company)}</span>" if exp.company else ""
             items_html.append(
                 f"""
                 <article class="cv-item">
                     <div class="cv-item-header">
-                        <div class="cv-item-title"><strong>{_e(exp.position)}</strong>{(' · ' + _e(exp.company)) if exp.company else ''}</div>
+                        <div class="cv-item-title"><strong>{_e(exp.position)}</strong>{company_part}</div>
                         <div class="cv-item-dates">{_e(dates)}</div>
                     </div>
                     {bullets_html}
@@ -113,47 +119,51 @@ def _render_section(block_key: str, data: ProfileData, labels: dict[str, str]) -
         """
 
     if block_key == "skills":
-        if not data.skills:
+        clean_skills = [s.strip() for s in data.skills if s.strip()]
+        if not clean_skills:
             return ""
-        chips = "".join(f"<span class='skill-tag'>{_e(s)}</span>" for s in data.skills if s.strip())
+        if template_id == "it":
+            chips = "".join(
+                f"<span class='skill-tag'>{_e(s)}</span>{'' if i == len(clean_skills) - 1 else '<span class=\"ats-sep\">, </span>'}"
+                for i, s in enumerate(clean_skills)
+            )
+            inner = f"<div class='skills-list'>{chips}</div>"
+        else:
+            inner = f"<p class='skills-plain'>{_e(', '.join(clean_skills))}</p>"
         return f"""
         <section class="cv-section">
             <h2>{_e(labels['skills'])}</h2>
-            <div class="skills-list">{chips}</div>
+            {inner}
         </section>
         """
 
     if block_key == "languages":
-        if not data.languages:
+        valid_langs = [l for l in data.languages if l.name.strip()]
+        if not valid_langs:
             return ""
-        items = "".join(
-            f"<li><strong>{_e(l.name)}</strong>{(' — ' + _e(l.level)) if l.level else ''}</li>"
-            for l in data.languages
-            if l.name.strip()
+        items = " · ".join(
+            f"<strong>{_e(l.name)}</strong>{(' — ' + _e(l.level)) if l.level else ''}"
+            for l in valid_langs
         )
-        if not items:
-            return ""
         return f"""
         <section class="cv-section">
             <h2>{_e(labels['languages'])}</h2>
-            <ul class="inline-list">{items}</ul>
+            <p class="inline-meta">{items}</p>
         </section>
         """
 
     if block_key == "links":
-        if not data.links:
+        valid_links = [lnk for lnk in data.links if lnk.url.strip()]
+        if not valid_links:
             return ""
         items = "".join(
-            f"<li><strong>{_e(lnk.label or 'Link')}:</strong> {_e(lnk.url)}</li>"
-            for lnk in data.links
-            if lnk.url.strip()
+            f"<li><strong>{_e(lnk.label or 'Link')}:</strong> <span class='link-url'>{_e(lnk.url)}</span></li>"
+            for lnk in valid_links
         )
-        if not items:
-            return ""
         return f"""
         <section class="cv-section">
             <h2>{_e(labels['links'])}</h2>
-            <ul class="inline-list">{items}</ul>
+            <ul class="links-list">{items}</ul>
         </section>
         """
 
@@ -162,69 +172,88 @@ def _render_section(block_key: str, data: ProfileData, labels: dict[str, str]) -
 
 def _template_css(template_id: Literal["minimal", "classic", "it"]) -> str:
     base = """
-    @page { size: A4; margin: 16mm 18mm; }
+    @page { size: A4; margin: 14mm 16mm; }
     * { box-sizing: border-box; }
-    body {
+    html, body {
         margin: 0;
         padding: 0;
-        color: #18181b;
-        line-height: 1.45;
-        font-size: 10.5pt;
+        background: #ffffff;
+        color: #111827;
+        line-height: 1.48;
+        font-size: 10.2pt;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
-    h1 { margin: 0 0 4px 0; font-size: 21pt; line-height: 1.15; }
-    .target-role { font-size: 12pt; margin: 0 0 8px 0; }
-    .contacts-line { font-size: 9.5pt; color: #3f3f46; display: flex; flex-wrap: wrap; gap: 6px 14px; }
+    @media screen {
+        body {
+            padding: 30px 36px;
+        }
+    }
+    @media print {
+        body {
+            padding: 0;
+        }
+    }
+    h1 { margin: 0 0 3px 0; font-size: 20pt; line-height: 1.15; letter-spacing: -0.01em; }
+    .target-role { font-size: 11.5pt; margin: 0 0 7px 0; }
+    .contacts-line { font-size: 9.2pt; color: #374151; line-height: 1.5; }
+    .contacts-line .sep { color: #9ca3af; margin: 0 6px; }
     .cv-section { margin-top: 14px; page-break-inside: avoid; }
-    .cv-section h2 { font-size: 11.5pt; margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: 0.04em; }
-    .cv-item { margin-bottom: 9px; }
+    .cv-section h2 { font-size: 10.5pt; margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: 0.06em; }
+    .cv-item { margin-bottom: 10px; }
+    .cv-item:last-child { margin-bottom: 0; }
     .cv-item-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-    .cv-item-dates { font-size: 9.5pt; color: #52525b; white-space: nowrap; }
+    .cv-item-title { font-size: 10.3pt; }
+    .company-sep { color: #9ca3af; font-weight: 400; }
+    .company-name { font-weight: 500; color: #374151; }
+    .cv-item-dates { font-size: 9pt; color: #4b5563; white-space: nowrap; }
     ul { margin: 4px 0 0 18px; padding: 0; }
     li { margin-bottom: 3px; }
-    p { margin: 3px 0; }
-    .muted { color: #52525b; font-size: 9.5pt; }
-    .skills-list { display: flex; flex-wrap: wrap; gap: 6px; }
-    .inline-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; }
+    p { margin: 2px 0; }
+    .summary-text { color: #1f2937; }
+    .muted { color: #4b5563; font-size: 9.4pt; }
+    .skills-plain { color: #1f2937; line-height: 1.55; }
+    .skills-list { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .ats-sep { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+    .inline-meta { font-size: 9.6pt; color: #1f2937; }
+    .links-list { list-style: none; margin: 0; padding: 0; font-size: 9.4pt; }
+    .links-list li { margin-bottom: 2px; word-break: break-all; }
+    .link-url { color: #1f2937; }
     """
 
     if template_id == "classic":
         return base + """
         body { font-family: Georgia, "Times New Roman", "Liberation Serif", serif; }
-        .cv-header { text-align: center; border-bottom: 1.5px solid #1e293b; padding-bottom: 10px; }
-        .contacts-line { justify-content: center; }
-        .target-role { color: #334155; font-style: italic; }
-        .cv-section h2 { border-bottom: 1px solid #cbd5e1; padding-bottom: 3px; color: #0f172a; }
-        .skill-tag { font-size: 9.5pt; padding-right: 8px; }
-        .skill-tag:not(:last-child)::after { content: " •"; color: #64748b; }
+        .cv-header { text-align: center; border-bottom: 1.5px solid #111827; padding-bottom: 10px; }
+        .target-role { color: #374151; font-style: italic; }
+        .cv-section h2 { border-bottom: 1px solid #9ca3af; padding-bottom: 3px; color: #111827; }
         """
 
     if template_id == "it":
         return base + """
-        body { font-family: "Segoe UI", Arial, "Liberation Sans", sans-serif; }
-        .cv-header { border-left: 4px solid #2563eb; padding-left: 12px; margin-bottom: 6px; }
+        body { font-family: "Segoe UI", Arial, "Liberation Sans", "DejaVu Sans", sans-serif; }
+        .cv-header { border-left: 3.5px solid #2563eb; padding-left: 14px; padding-bottom: 2px; }
         h1 { color: #0f172a; }
-        .target-role { color: #2563eb; font-weight: 600; }
+        .target-role { color: #1d4ed8; font-weight: 600; }
         .cv-section h2 { color: #1d4ed8; border-bottom: 1px solid #dbeafe; padding-bottom: 3px; }
         .skill-tag {
             background: #eff6ff;
             border: 1px solid #bfdbfe;
             color: #1e3a8a;
-            border-radius: 4px;
+            border-radius: 5px;
             padding: 2px 8px;
-            font-size: 9pt;
-            font-family: "Cascadia Code", Consolas, "Liberation Mono", monospace;
+            font-size: 8.8pt;
+            font-weight: 500;
         }
+        .link-url { color: #1d4ed8; }
         """
 
-    # minimal (default)
+    # minimal (Harvard ATS Clean — highest parser compatibility)
     return base + """
-    body { font-family: "Segoe UI", Arial, "Liberation Sans", sans-serif; }
-    .cv-header { border-bottom: 1px solid #e4e4e7; padding-bottom: 10px; }
-    .target-role { color: #3f3f46; font-weight: 500; }
-    .cv-section h2 { color: #18181b; border-bottom: 1px solid #f4f4f5; padding-bottom: 2px; }
-    .skill-tag { background: #f4f4f5; color: #18181b; border-radius: 3px; padding: 2px 7px; font-size: 9.2pt; }
+    body { font-family: "Segoe UI", Arial, "Liberation Sans", "DejaVu Sans", sans-serif; }
+    .cv-header { border-bottom: 1.5px solid #18181b; padding-bottom: 9px; }
+    .target-role { color: #27272a; font-weight: 600; }
+    .cv-section h2 { color: #111827; border-bottom: 1px solid #d4d4d8; padding-bottom: 2px; }
     """
 
 
@@ -234,7 +263,7 @@ def render_resume_html(
     language: Literal["uk", "en"],
     block_order: list[str],
 ) -> str:
-    """Render complete standalone UTF-8 HTML document for PDF export or preview."""
+    """Render complete standalone UTF-8 HTML document for PDF export or screen preview."""
     labels = SECTION_TITLES.get(language, SECTION_TITLES["uk"])
     name = _display_name(data)
     contact_parts = [
@@ -248,8 +277,8 @@ def render_resume_html(
         )
         if p
     ]
-    contacts_html = "".join(f"<span>{_e(item)}</span>" for item in contact_parts)
-    sections_html = "".join(_render_section(b, data, labels) for b in block_order)
+    contacts_html = '<span class="sep">|</span>'.join(f"<span>{_e(item)}</span>" for item in contact_parts)
+    sections_html = "".join(_render_section(b, data, labels, template_id) for b in block_order)
 
     return f"""<!DOCTYPE html>
 <html lang="{_e(language)}">

@@ -81,3 +81,38 @@ def test_builtin_web_ui_and_health(client):
     health_resp = client.get("/health")
     assert health_resp.status_code == 200
     assert health_resp.json()["status"] == "ok"
+
+
+def test_ats_check_endpoint_and_vacancy_keywords(client):
+    payload = {
+        "template_id": "minimal",
+        "language": "uk",
+        "vacancy_text": "Looking for Junior Python Developer with FastAPI, PostgreSQL, Docker, Kubernetes experience.",
+        "data": {
+            "contacts": {
+                "first_name": "Аріна",
+                "last_name": "Бадовська",
+                "email": "arina@example.com",
+                "phone": "+380671234567",
+            },
+            "target_role": "Junior Python Developer",
+            "summary": "Розробниця з практичним досвідом створення REST API на FastAPI та PostgreSQL для веб-сервісів.",
+            "experiences": [
+                {
+                    "company": "DUICT Lab",
+                    "position": "Backend Developer",
+                    "start_date": "2025-01",
+                    "is_current": True,
+                    "bullets": ["Прискорила обробку запитів на 40% та покрила код 14 автотестами"],
+                }
+            ],
+            "skills": ["Python", "FastAPI", "PostgreSQL", "Docker", "Git"],
+        },
+    }
+    resp = client.post("/api/resume/ats-check", json=payload)
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["score"] >= 80
+    assert len(body["checks"]) == 7
+    assert any(k.lower() == "fastapi" for k in body["matched_keywords"])
+    assert any(k.lower() == "kubernetes" for k in body["missing_keywords"])

@@ -9,6 +9,7 @@ from app.core.database import get_db
 from app.models.models import User
 from app.schemas.profile import ProfileData
 from app.schemas.resume import ResumePreviewRequest, ResumeResponse, ResumeUpdateRequest
+from app.services.ats_service import ATSCheckRequest, ATSCheckResponse, analyze_ats
 from app.services.html_templates import render_resume_html
 from app.services.resume_service import (
     estimate_pages,
@@ -64,3 +65,9 @@ def preview_html(payload: ResumePreviewRequest):
     """Render live ATS-friendly HTML preview (accessible for both users and guest demo)."""
     html_str = render_resume_html(payload.data, payload.template_id, payload.language, payload.block_order)
     return HTMLResponse(content=html_str)
+
+
+@router.post("/ats-check", response_model=ATSCheckResponse)
+def ats_check(payload: ATSCheckRequest):
+    """Evaluate ATS readiness score, structural checks, and optional vacancy keyword match."""
+    return analyze_ats(payload)

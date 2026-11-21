@@ -3,410 +3,847 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ResumeCraft — Сервіс-генератор резюме</title>
+  <title>ResumeCraft — ATS-генератор резюме з AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet" />
   <style>
     :root {
       --bg: #f8fafc;
-      --card: #ffffff;
+      --surface: #ffffff;
+      --surface-soft: #f1f5f9;
       --text: #0f172a;
-      --muted: #475569;
+      --text-2: #334155;
+      --muted: #64748b;
       --border: #e2e8f0;
+      --border-strong: #cbd5e1;
       --brand: #2563eb;
-      --brand-dark: #1d4ed8;
-      --ok: #047857;
+      --brand-hover: #1d4ed8;
+      --brand-soft: #eff6ff;
+      --brand-border: #bfdbfe;
+      --indigo: #4f46e5;
+      --ok: #059669;
       --ok-bg: #ecfdf5;
-      --err: #b91c1c;
-      --err-bg: #fef2f2;
+      --ok-border: #a7f3d0;
+      --warn: #b45309;
       --warn-bg: #fffbeb;
-      --warn: #92400e;
+      --warn-border: #fde68a;
+      --err: #dc2626;
+      --err-bg: #fef2f2;
+      --err-border: #fecaca;
+      --radius: 14px;
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+      --shadow-md: 0 10px 30px -10px rgba(15, 23, 42, 0.12);
+      --shadow-paper: 0 18px 45px -12px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(15, 23, 42, 0.05);
     }
+
     * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
     body {
       margin: 0;
-      font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
       background: var(--bg);
       color: var(--text);
-      line-height: 1.5;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
     }
+
+    /* Header */
     header {
       position: sticky;
       top: 0;
-      z-index: 20;
-      background: rgba(255,255,255,0.96);
+      z-index: 40;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(6px);
     }
     .nav-wrap {
-      max-width: 1240px;
+      max-width: 1280px;
       margin: 0 auto;
-      padding: 12px 20px;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+      font-weight: 800;
+      font-size: 19px;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+    }
+    .logo-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--brand), var(--indigo));
+      color: #fff;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 6px 14px -4px rgba(37, 99, 235, 0.55);
+    }
+    .logo-tag {
+      font-family: "Inter", sans-serif;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: var(--ok-bg);
+      color: var(--ok);
+      border: 1px solid var(--ok-border);
+      letter-spacing: 0.02em;
+    }
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Buttons */
+    button, .btn {
+      font: inherit;
+      cursor: pointer;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-2);
+      padding: 8px 15px;
+      font-size: 13.5px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.16s ease;
+    }
+    button:hover { background: var(--surface-soft); border-color: var(--border-strong); color: var(--text); }
+    button.primary {
+      background: linear-gradient(135deg, var(--brand), #1e40af);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 4px 12px -2px rgba(37, 99, 235, 0.4);
+    }
+    button.primary:hover {
+      background: linear-gradient(135deg, var(--brand-hover), #1e3a8a);
+      transform: translateY(-1px);
+      color: #fff;
+    }
+    button.soft-brand {
+      background: var(--brand-soft);
+      color: var(--brand-hover);
+      border-color: var(--brand-border);
+    }
+    button.soft-brand:hover { background: #dbeafe; }
+    button.ghost { background: transparent; border-color: transparent; }
+    button.ghost:hover { background: var(--surface-soft); }
+    button.active-tab { background: var(--brand-soft); color: var(--brand-hover); border-color: var(--brand-border); }
+    button.danger { background: var(--err); color: #fff; border-color: var(--err); }
+    button.danger:hover { background: #b91c1c; }
+    button.lg { padding: 11px 20px; font-size: 14.5px; border-radius: 12px; }
+    button.small { padding: 5px 10px; font-size: 12px; border-radius: 8px; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+    /* Segmented control */
+    .segmented {
+      display: inline-flex;
+      background: var(--surface-soft);
+      padding: 3px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      gap: 2px;
+    }
+    .segmented button {
+      border: none;
+      background: transparent;
+      padding: 5px 12px;
+      font-size: 12.5px;
+      border-radius: 7px;
+      color: var(--muted);
+      box-shadow: none;
+    }
+    .segmented button:hover { color: var(--text); background: rgba(255,255,255,0.6); }
+    .segmented button.active {
+      background: #fff;
+      color: var(--brand-hover);
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+    }
+
+    /* Layout & Containers */
+    .container { max-width: 1280px; margin: 0 auto; padding: 24px; }
+    .hidden { display: none !important; }
+
+    /* Hero */
+    .hero-bg {
+      background:
+        radial-gradient(60% 55% at 15% 5%, rgba(37, 99, 235, 0.08), transparent 65%),
+        radial-gradient(45% 45% at 88% 10%, rgba(79, 70, 229, 0.08), transparent 60%),
+        linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.02fr) minmax(0, 1.18fr);
+      gap: 40px;
+      align-items: start;
+      padding: 34px 0 42px;
+    }
+    @media (max-width: 1024px) {
+      .hero-grid { grid-template-columns: 1fr; gap: 28px; padding: 20px 0 32px; }
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--brand-soft);
+      border: 1px solid var(--brand-border);
+      color: var(--brand-hover);
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      font-weight: 600;
+    }
+    .hero-title {
+      font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+      font-size: clamp(32px, 3.8vw, 46px);
+      line-height: 1.12;
+      letter-spacing: -0.03em;
+      margin: 16px 0 16px;
+      font-weight: 800;
+      color: #0b1220;
+    }
+    .hero-title .accent {
+      background: linear-gradient(135deg, var(--brand), var(--indigo));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-sub {
+      color: var(--text-2);
+      font-size: 16px;
+      line-height: 1.65;
+      margin: 0 0 24px;
+      max-width: 540px;
+    }
+    .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 28px; }
+    .trust-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 18px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+    @media (max-width: 560px) { .trust-grid { grid-template-columns: 1fr; } }
+    .trust-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-2);
+      font-weight: 500;
+    }
+    .trust-icon {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--ok-bg);
+      color: var(--ok);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    /* Showcase frame */
+    .showcase-shell {
+      background: #e8edf5;
+      border: 1px solid #d5dfec;
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: var(--shadow-md);
+    }
+    .showcase-bar {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
-    }
-    .logo {
-      display: flex;
-      align-items: center;
       gap: 10px;
-      font-weight: 800;
-      font-size: 18px;
-      color: var(--text);
-      cursor: pointer;
+      margin-bottom: 14px;
     }
-    .logo-badge {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      background: var(--brand);
-      color: #fff;
-      display: grid;
-      place-items: center;
-      font-size: 15px;
-    }
-    .nav-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    button, .btn {
-      font: inherit;
-      cursor: pointer;
-      border-radius: 9px;
-      border: 1px solid var(--border);
-      background: #fff;
-      color: var(--text);
-      padding: 7px 14px;
-      font-size: 13px;
-      font-weight: 600;
-      transition: 0.15s;
-    }
-    button:hover { background: #f1f5f9; }
-    button.primary { background: var(--brand); color: #fff; border-color: var(--brand); }
-    button.primary:hover { background: var(--brand-dark); }
-    button.active-tab { background: #eff6ff; color: var(--brand-dark); border-color: #bfdbfe; }
-    button.danger { background: #dc2626; color: #fff; border-color: #dc2626; }
-    button.small { padding: 4px 10px; font-size: 12px; }
-    button:disabled { opacity: 0.55; cursor: not-allowed; }
-    .container { max-width: 1240px; margin: 0 auto; padding: 24px 20px; }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 20px;
-      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-    }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; }
-    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-    @media (max-width: 920px) {
-      .grid-2, .grid-3 { grid-template-columns: 1fr; }
-    }
-    .hero-title { font-size: 36px; line-height: 1.15; margin: 10px 0 14px; font-weight: 800; }
-    .pill {
-      display: inline-block;
-      background: #eff6ff;
-      color: var(--brand-dark);
-      padding: 4px 12px;
+    .ats-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 11px;
       border-radius: 999px;
       font-size: 12px;
       font-weight: 700;
+      background: var(--ok-bg);
+      color: var(--ok);
+      border: 1px solid var(--ok-border);
     }
-    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    @media (max-width: 600px) { .field-grid { grid-template-columns: 1fr; } }
-    input, textarea, select {
+    .ats-pill.mid { background: var(--warn-bg); color: var(--warn); border-color: var(--warn-border); }
+    .ats-pill.low { background: var(--err-bg); color: var(--err); border-color: var(--err-border); }
+
+    .paper-sheet {
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: var(--shadow-paper);
+    }
+    .preview-frame {
       width: 100%;
-      padding: 8px 11px;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      font: inherit;
-      font-size: 13.5px;
+      min-height: 680px;
+      border: none;
+      display: block;
       background: #fff;
     }
-    textarea { resize: vertical; }
-    label.field-label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
-    .notice { padding: 10px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 14px; }
-    .notice.err { background: var(--err-bg); color: var(--err); border: 1px solid #fecaca; }
-    .notice.ok { background: var(--ok-bg); color: var(--ok); border: 1px solid #a7f3d0; }
-    .notice.warn { background: var(--warn-bg); color: var(--warn); border: 1px solid #fde68a; }
-    .hidden { display: none !important; }
+
+    /* Feature & Steps sections */
+    .section-block { padding: 52px 0; border-top: 1px solid var(--border); background: #fff; }
+    .section-block.soft { background: var(--bg); }
+    .section-title {
+      font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      text-align: center;
+      margin: 0 0 8px;
+    }
+    .section-sub { text-align: center; color: var(--muted); font-size: 15px; margin: 0 auto 32px; max-width: 600px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    @media (max-width: 900px) { .grid-3 { grid-template-columns: 1fr; } }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      box-shadow: var(--shadow-sm);
+    }
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 11px;
+      background: var(--brand-soft);
+      color: var(--brand);
+      display: grid;
+      place-items: center;
+      margin-bottom: 14px;
+      font-weight: 800;
+      font-size: 15px;
+    }
+    .feature-card h3 { margin: 0 0 8px; font-size: 16px; font-weight: 700; }
+    .feature-card p { margin: 0; font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+
+    /* Cards & Workspace */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 1024px) { .workspace-grid { grid-template-columns: 1fr; } }
+
     .toolbar {
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
+      gap: 12px;
+      margin-bottom: 18px;
     }
+    .toolbar-group { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+    /* Forms */
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 600px) { .field-grid { grid-template-columns: 1fr; } }
+    .field-full { grid-column: 1 / -1; }
+    label.field-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-2);
+      margin-bottom: 5px;
+    }
+    input, textarea, select {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--border-strong);
+      border-radius: 9px;
+      font: inherit;
+      font-size: 13.5px;
+      color: var(--text);
+      background: #fff;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+    }
+    textarea { resize: vertical; }
+
+    /* Notices */
+    .notice {
+      padding: 12px 15px;
+      border-radius: 12px;
+      font-size: 13.5px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .notice.err { background: var(--err-bg); color: var(--err); border: 1px solid var(--err-border); }
+    .notice.ok { background: var(--ok-bg); color: var(--ok); border: 1px solid var(--ok-border); }
+    .notice.warn { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-border); }
+
+    /* Chips & Tags */
     .chip {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: #f1f5f9;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
       padding: 4px 10px;
       border-radius: 999px;
       font-size: 12px;
       font-weight: 600;
+      color: var(--text-2);
     }
-    .preview-frame {
-      width: 100%;
-      min-height: 680px;
+    .chip.green { background: var(--ok-bg); border-color: var(--ok-border); color: var(--ok); }
+    .chip.amber { background: var(--warn-bg); border-color: var(--warn-border); color: var(--warn); }
+    .chip-remove {
+      border: none;
+      background: transparent;
+      padding: 0 2px;
+      font-size: 14px;
+      line-height: 1;
+      color: var(--muted);
+    }
+    .chip-remove:hover { color: var(--err); background: transparent; }
+
+    /* Experience & Education boxes */
+    .sub-card {
       border: 1px solid var(--border);
       border-radius: 12px;
-      background: #fff;
-    }
-    .exp-box { border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-top: 10px; background: #fcfcfd; }
-    .progress-bar { height: 10px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin-top: 6px; }
-    .progress-fill { height: 100%; background: var(--brand); transition: width 0.25s; }
-    .ai-box {
-      border: 1px solid #bfdbfe;
-      background: #eff6ff;
-      border-radius: 12px;
       padding: 14px;
-      margin-bottom: 14px;
+      margin-top: 12px;
+      background: #fafbfd;
+    }
+
+    /* AI Panel */
+    .ai-box {
+      border: 1px solid var(--brand-border);
+      background: linear-gradient(180deg, #eff6ff 0%, #f8fbff 100%);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-sm);
     }
     .ai-variant {
       background: #fff;
       border: 1px solid #dbeafe;
-      border-radius: 8px;
-      padding: 10px;
+      border-radius: 10px;
+      padding: 11px 13px;
       margin-top: 8px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
     }
+
+    /* ATS Checklist */
+    .progress-bar { height: 10px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin-top: 8px; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--brand), var(--ok)); transition: width 0.3s ease; }
+    .ats-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #fff;
+      margin-top: 8px;
+    }
+    .ats-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 800;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .ats-dot.pass { background: var(--ok-bg); color: var(--ok); border: 1px solid var(--ok-border); }
+    .ats-dot.fail { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-border); }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border);
+      background: #fff;
+      padding: 20px 24px;
+      margin-top: 40px;
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+    .footer-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    footer a { color: var(--muted); text-decoration: none; }
+    footer a:hover { color: var(--brand); text-decoration: underline; }
   </style>
 </head>
 <body>
   <header>
     <div class="nav-wrap">
       <div class="logo" onclick="navigate('landing')">
-        <div class="logo-badge">RC</div>
+        <div class="logo-mark">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+        </div>
         <span>ResumeCraft</span>
+        <span class="logo-tag">ATS-Ready</span>
       </div>
       <div class="nav-actions" id="nav-actions"></div>
     </div>
   </header>
 
-  <main class="container">
+  <div class="container" style="padding-bottom:0;">
     <div id="global-alert" class="notice hidden"></div>
+  </div>
 
-    <!-- LANDING VIEW -->
-    <section id="view-landing">
-      <div class="grid-2">
+  <!-- LANDING VIEW -->
+  <div id="view-landing">
+    <section class="hero-bg">
+      <div class="container">
+        <div class="hero-grid">
+          <div>
+            <span class="eyebrow">Для шукачів роботи в Україні · Українська та English</span>
+            <h1 class="hero-title">
+              Створіть <span class="accent">ATS-резюме</span> за 15 хвилин з одного профілю
+            </h1>
+            <p class="hero-sub">
+              Жодних таблиць верстки та зламаного форматування. Заповніть єдиний профіль, перевірте готовність до систем відбору (ATS), підсильте формулювання чесним AI та завантажте чистий PDF і DOCX.
+            </p>
+            <div class="hero-cta">
+              <button class="primary lg" onclick="navigate('register')">Створити резюме безкоштовно →</button>
+              <button class="lg" onclick="openDemo()">Спробувати демо-редактор</button>
+            </div>
+            <div class="trust-grid">
+              <div class="trust-item"><span class="trust-icon">✓</span><span>Одноколонкова ATS-структура без таблиць</span></div>
+              <div class="trust-item"><span class="trust-icon">✓</span><span>Виділюваний текст та коректна кирилиця у PDF</span></div>
+              <div class="trust-item"><span class="trust-icon">✓</span><span>AI не вигадує факти — правки лише за підтвердженням</span></div>
+              <div class="trust-item"><span class="trust-icon">✓</span><span>Перевірка ключових слів під конкретну вакансію</span></div>
+            </div>
+          </div>
+
+          <div class="showcase-shell">
+            <div class="showcase-bar">
+              <div class="segmented">
+                <button class="active" id="gal-btn-minimal" onclick="setGalleryTemplate('minimal')">Мінімальний ATS</button>
+                <button id="gal-btn-classic" onclick="setGalleryTemplate('classic')">Класичний</button>
+                <button id="gal-btn-it" onclick="setGalleryTemplate('it')">IT / Tech</button>
+              </div>
+              <span class="ats-pill">✓ ATS Score: 100/100</span>
+            </div>
+            <div class="paper-sheet">
+              <iframe id="landing-preview" class="preview-frame" style="min-height:660px;" title="Галерея ATS-шаблонів"></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-block">
+      <div class="container" style="padding-top:0; padding-bottom:0;">
+        <h2 class="section-title">Чому резюме з ResumeCraft проходять ATS</h2>
+        <p class="section-sub">Спроєктовано під алгоритми автоматичного відбору роботодавців та вимоги Work.ua, Robota.ua, Djinni, DOU і LinkedIn.</p>
+        <div class="grid-3">
+          <div class="feature-card">
+            <div class="feature-icon">01</div>
+            <h3>Чиста ATS-верстка</h3>
+            <p>Стандартні заголовки секцій, одна колонка, нуль таблиць чи текстових картинок. Парсер ATS гарантовано зчитає кожне слово, дату й навичку.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">02</div>
+            <h3>Жива ATS-перевірка + вакансія</h3>
+            <p>Оцінка готовності 0–100% у реальному часі: перевірка контактів, цифр у досягненнях, обсягу до 2 сторінок та збігу ключових слів із текстом вакансії.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">03</div>
+            <h3>Чесний AI-помічник</h3>
+            <p>Пропонує 2–3 варіанти за формулою «дія + результат + цифра» та блок «Про себе». Якщо цифри невідомі — чесно ставить «уточніть», нічого не вигадує.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- AUTH VIEW -->
+  <section id="view-auth" class="container hidden" style="max-width:460px; padding-top:42px;">
+    <div class="card" style="padding:28px;">
+      <h2 id="auth-title" style="margin:0 0 6px; font-family:'Plus Jakarta Sans',sans-serif;">Вхід у ResumeCraft</h2>
+      <p id="auth-sub" style="margin:0 0 20px; font-size:13.5px; color:var(--muted);">Продовжуйте роботу над вашим ATS-резюме.</p>
+      <div style="display:flex; flex-direction:column; gap:14px;">
         <div>
-          <span class="pill">Для шукачів роботи в Україні · Українська та English</span>
-          <h1 class="hero-title">Якісне резюме за 15 хвилин з одного профілю</h1>
-          <p style="color:var(--muted); font-size:15.5px;">
-            Заповніть профіль один раз, перемикайтеся між 3 ATS-дружніми шаблонами без втрати даних,
-            користуйтеся чесними AI-підказками (лише після вашого підтвердження) та експортуйте коректний PDF і DOCX.
-          </p>
-          <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:20px;">
-            <button class="primary" onclick="navigate('register')">Створити резюме</button>
-            <button onclick="openDemo()">Спробувати демо-редактор</button>
-            <a href="/docs" target="_blank" style="text-decoration:none;"><button type="button">API (Swagger)</button></a>
+          <label class="field-label">Email</label>
+          <input id="auth-email" type="email" placeholder="name@example.com" />
+        </div>
+        <div>
+          <label class="field-label">Пароль (мін. 8 символів)</label>
+          <input id="auth-password" type="password" placeholder="••••••••" />
+        </div>
+        <label id="auth-consent-wrap" style="display:flex; gap:10px; align-items:flex-start; font-size:12.5px; color:var(--text-2); cursor:pointer;">
+          <input id="auth-consent" type="checkbox" style="width:auto; margin-top:3px;" />
+          <span>Надаю згоду на обробку персональних даних для створення й експорту резюме. Я знаю, що можу видалити акаунт і всі файли в налаштуваннях.</span>
+        </label>
+        <button class="primary lg" id="auth-submit-btn" onclick="submitAuth()" style="width:100%;">Увійти</button>
+      </div>
+      <div id="verify-box" class="notice ok hidden" style="margin-top:16px; margin-bottom:0;">
+        <div><strong>Акаунт створено!</strong> Підтвердіть email в один клік:</div>
+        <button class="small primary" onclick="verifyNow()">Підтвердити email</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROFILE VIEW -->
+  <section id="view-profile" class="container hidden" style="max-width:880px;">
+    <div class="card">
+      <div class="toolbar" style="margin-bottom:8px;">
+        <div>
+          <h2 style="margin:0; font-family:'Plus Jakarta Sans',sans-serif;">Єдиний профіль кандидата</h2>
+          <div style="font-size:13.5px; color:var(--muted); margin-top:2px;">Заповненість профілю: <strong id="prof-score" style="color:var(--brand);">0%</strong></div>
+        </div>
+        <div class="toolbar-group">
+          <button class="primary" onclick="saveProfile()">Зберегти профіль</button>
+          <button onclick="navigate('editor')">Відкрити редактор →</button>
+        </div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="prof-progress" style="width:0%"></div></div>
+      <p id="prof-missing" style="font-size:12.5px; color:var(--muted); margin:10px 0 0;"></p>
+    </div>
+    <div id="profile-form-host" style="margin-top:18px;"></div>
+  </section>
+
+  <!-- EDITOR / DEMO VIEW -->
+  <section id="view-editor" class="container hidden">
+    <div id="demo-banner" class="notice warn hidden">
+      <div><strong>Демо-редактор (без збереження):</strong> ви можете протестувати всі 3 ATS-шаблони, форму та ATS-перевірку. Для збереження, AI та експорту PDF/DOCX створіть безкоштовний акаунт.</div>
+      <button class="small primary" onclick="navigate('register')">Зареєструватися</button>
+    </div>
+
+    <!-- Top Editor Toolbar -->
+    <div class="card toolbar" style="padding:14px 18px;">
+      <div class="toolbar-group">
+        <div class="segmented">
+          <button class="active" id="tpl-btn-minimal" onclick="setTemplate('minimal')">Мінімальний ATS</button>
+          <button id="tpl-btn-classic" onclick="setTemplate('classic')">Класичний</button>
+          <button id="tpl-btn-it" onclick="setTemplate('it')">IT / Tech</button>
+        </div>
+        <select id="resume-lang" style="width:auto; font-size:12.5px; padding:6px 10px;" onchange="onLangChange(this.value)">
+          <option value="uk">Мова: Українська</option>
+          <option value="en">Мова: English</option>
+        </select>
+        <button class="small" id="ats-score-btn" onclick="setRightTab('ats')" title="Відкрити ATS-перевірку">
+          <span id="ats-score-pill" class="ats-pill" style="padding:2px 8px; border:none;">ATS: —</span>
+        </button>
+        <span id="quota-badge" class="chip hidden">AI: 10/10</span>
+        <span id="save-badge" style="font-size:12px; font-weight:600; color:var(--ok);"></span>
+      </div>
+      <div class="toolbar-group">
+        <button class="small" id="btn-save-resume" onclick="saveResume()">Зберегти</button>
+        <button class="small primary" onclick="exportFile('pdf')">⬇ PDF</button>
+        <button class="small soft-brand" onclick="exportFile('docx')">⬇ DOCX</button>
+      </div>
+    </div>
+
+    <div id="page-warning" class="notice warn hidden">
+      <div><strong>Попередження ATS:</strong> орієнтовна довжина резюме — <span id="est-pages">3</span> стор. Рекомендуємо скоротити до 1–2 сторінок A4.</div>
+    </div>
+
+    <div class="workspace-grid">
+      <!-- Left: Form -->
+      <div id="editor-left">
+        <div id="ai-panel" class="ai-box hidden">
+          <div class="toolbar" style="margin-bottom:6px;">
+            <strong id="ai-title" style="font-size:14px; color:#1e3a8a;">✨ Варіанти від AI-помічника</strong>
+            <button class="small" onclick="closeAiPanel()">Відхилити</button>
           </div>
-          <div class="grid-3" style="margin-top:24px;">
-            <div class="card" style="padding:14px;">
-              <strong>3 ATS-шаблони</strong>
-              <p style="font-size:12.5px; color:var(--muted); margin:6px 0 0;">Мінімальний, Класичний та IT без втрати даних.</p>
-            </div>
-            <div class="card" style="padding:14px;">
-              <strong>Чесний AI</strong>
-              <p style="font-size:12.5px; color:var(--muted); margin:6px 0 0;">Не вигадує факти; правка вноситься після підтвердження.</p>
-            </div>
-            <div class="card" style="padding:14px;">
-              <strong>PDF + DOCX</strong>
-              <p style="font-size:12.5px; color:var(--muted); margin:6px 0 0;">Виділюваний текст, кирилиця та зрозуміла назва файлу.</p>
-            </div>
+          <div id="ai-disclaimer" style="font-size:12px; color:#1e40af;"></div>
+          <div id="ai-variants"></div>
+        </div>
+
+        <!-- Contacts -->
+        <div class="card" style="margin-bottom:16px;">
+          <h3 style="margin:0 0 12px; font-size:15.5px;">1. Контакти та цільова посада</h3>
+          <div class="field-grid">
+            <div><label class="field-label">Ім'я</label><input id="f-first" placeholder="Аріна" oninput="updateField('contacts.first_name', this.value)" /></div>
+            <div><label class="field-label">Прізвище</label><input id="f-last" placeholder="Бадовська" oninput="updateField('contacts.last_name', this.value)" /></div>
+            <div><label class="field-label">Email</label><input id="f-email" type="email" placeholder="name@example.com" oninput="updateField('contacts.email', this.value)" /></div>
+            <div><label class="field-label">Телефон</label><input id="f-phone" placeholder="+380 67 123 45 67" oninput="updateField('contacts.phone', this.value)" /></div>
+            <div><label class="field-label">Місто / Локація</label><input id="f-loc" placeholder="Київ, Україна" oninput="updateField('contacts.location', this.value)" /></div>
+            <div><label class="field-label">Бажана посада (для ATS)</label><input id="f-role" placeholder="Junior Python Developer" oninput="updateField('target_role', this.value)" /></div>
+            <div><label class="field-label">Формат роботи</label><input id="f-format" placeholder="Віддалено / Гібрид" oninput="updateField('work_format', this.value)" /></div>
+            <div><label class="field-label">Бажана зарплата (опціонально)</label><input id="f-salary" placeholder="від $800" oninput="updateField('desired_salary', this.value)" /></div>
           </div>
         </div>
-        <div class="card">
+
+        <!-- Block Order -->
+        <div class="card" style="margin-bottom:16px; padding:16px 20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3 style="margin:0; font-size:14.5px;">Порядок блоків у резюме</h3>
+            <span style="font-size:12px; color:var(--muted);">Зберігається автоматично</span>
+          </div>
+          <div id="block-order-list" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+        </div>
+
+        <!-- Summary -->
+        <div class="card" style="margin-bottom:16px;">
           <div class="toolbar" style="margin-bottom:10px;">
-            <strong style="font-size:13px;">Галерея шаблонів</strong>
-            <div style="display:flex; gap:6px;">
-              <button class="small primary" id="gal-btn-minimal" onclick="setGalleryTemplate('minimal')">Мінімальний</button>
-              <button class="small" id="gal-btn-classic" onclick="setGalleryTemplate('classic')">Класичний</button>
-              <button class="small" id="gal-btn-it" onclick="setGalleryTemplate('it')">IT</button>
+            <h3 style="margin:0; font-size:15.5px;">2. Про себе (Summary)</h3>
+            <div class="toolbar-group">
+              <button class="small soft-brand" onclick="aiGenerateSummary()">✨ AI: 3 варіанти</button>
+              <button class="small" onclick="aiEditSummary()">✨ Покращити</button>
             </div>
           </div>
-          <iframe id="landing-preview" class="preview-frame" style="min-height:520px;" title="Галерея шаблонів"></iframe>
+          <textarea id="f-summary" rows="4" placeholder="2–4 речення: ваша роль, ключові технології та досягнення..." oninput="updateField('summary', this.value)"></textarea>
         </div>
-      </div>
-    </section>
 
-    <!-- AUTH VIEW -->
-    <section id="view-auth" class="hidden" style="max-width:460px; margin:20px auto;">
-      <div class="card">
-        <h2 id="auth-title" style="margin-top:0;">Вхід у ResumeCraft</h2>
-        <div style="display:flex; flex-direction:column; gap:12px;">
-          <div>
-            <label class="field-label">Email</label>
-            <input id="auth-email" type="email" placeholder="name@example.com" />
+        <!-- Experience -->
+        <div class="card" style="margin-bottom:16px;">
+          <div class="toolbar" style="margin-bottom:6px;">
+            <h3 style="margin:0; font-size:15.5px;">3. Досвід роботи та проєкти</h3>
+            <button class="small" onclick="addExperience()">+ Додати місце</button>
           </div>
-          <div>
-            <label class="field-label">Пароль (мін. 8 символів)</label>
-            <input id="auth-password" type="password" placeholder="••••••••" />
-          </div>
-          <label id="auth-consent-wrap" style="display:flex; gap:8px; align-items:flex-start; font-size:12.5px; color:var(--muted);">
-            <input id="auth-consent" type="checkbox" style="width:auto; margin-top:3px;" />
-            <span>Надаю згоду на обробку персональних даних для створення та експорту резюме.</span>
-          </label>
-          <button class="primary" id="auth-submit-btn" onclick="submitAuth()">Увійти</button>
+          <p style="margin:0 0 8px; font-size:12.5px; color:var(--muted);">Порада ATS: описуйте пункти за схемою «Дія + Результат + Цифра».</p>
+          <div id="exp-list"></div>
         </div>
-        <div id="verify-box" class="notice ok hidden" style="margin-top:14px;">
-          <div><strong>Акаунт створено!</strong> Можете підтвердити email в один клік:</div>
-          <button class="small primary" style="margin-top:8px;" onclick="verifyNow()">Підтвердити email</button>
-        </div>
-      </div>
-    </section>
 
-    <!-- PROFILE VIEW -->
-    <section id="view-profile" class="hidden" style="max-width:860px; margin:0 auto;">
-      <div class="card">
-        <div class="toolbar">
-          <div>
-            <h2 style="margin:0;">Єдиний профіль кандидата</h2>
-            <div style="font-size:13px; color:var(--muted);">Заповненість профілю: <strong id="prof-score">0%</strong></div>
+        <!-- Education -->
+        <div class="card" style="margin-bottom:16px;">
+          <div class="toolbar" style="margin-bottom:6px;">
+            <h3 style="margin:0; font-size:15.5px;">4. Освіта</h3>
+            <button class="small" onclick="addEducation()">+ Додати освіту</button>
           </div>
+          <div id="edu-list"></div>
+        </div>
+
+        <!-- Skills, Languages, Links -->
+        <div class="card" style="margin-bottom:16px;">
+          <h3 style="margin:0 0 12px; font-size:15.5px;">5. Навички, мови та посилання</h3>
+          <label class="field-label">Ключові навички (додайте через Enter або кому, до 30)</label>
           <div style="display:flex; gap:8px;">
-            <button class="primary" onclick="saveProfile()">Зберегти профіль</button>
-            <button onclick="navigate('editor')">Відкрити редактор</button>
+            <input id="f-skill-input" placeholder="Наприклад: Python, FastAPI, SQL, Docker" onkeydown="if(event.key==='Enter'){event.preventDefault(); addSkillFromInput();}" />
+            <button class="small primary" type="button" onclick="addSkillFromInput()">Додати</button>
           </div>
-        </div>
-        <div class="progress-bar"><div class="progress-fill" id="prof-progress" style="width:0%"></div></div>
-        <p id="prof-missing" style="font-size:12px; color:var(--muted); margin-top:8px;"></p>
-      </div>
-      <div id="profile-form-host" style="margin-top:16px;"></div>
-    </section>
+          <div id="skills-chips" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;"></div>
 
-    <!-- EDITOR / DEMO VIEW -->
-    <section id="view-editor" class="hidden">
-      <div id="demo-banner" class="notice warn hidden">
-        <strong>Демо-редактор (без збереження):</strong> тестуйте форму, 3 шаблони та перегляд. Щоб зберігати, запускати AI і завантажувати PDF/DOCX —
-        <button class="small primary" onclick="navigate('register')" style="margin-left:8px;">Зареєструватися</button>
-      </div>
-
-      <div class="card toolbar">
-        <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
-          <button class="small primary" id="tpl-btn-minimal" onclick="setTemplate('minimal')">Мінімальний</button>
-          <button class="small" id="tpl-btn-classic" onclick="setTemplate('classic')">Класичний</button>
-          <button class="small" id="tpl-btn-it" onclick="setTemplate('it')">IT</button>
-          <select id="resume-lang" style="width:auto; font-size:12.5px; padding:5px 10px;" onchange="onLangChange(this.value)">
-            <option value="uk">Мова: Українська</option>
-            <option value="en">Мова: English</option>
-          </select>
-          <span id="quota-badge" class="chip hidden">AI: 10/10</span>
-          <span id="save-badge" style="font-size:12px; color:var(--ok);"></span>
-        </div>
-        <div style="display:flex; flex-wrap:wrap; gap:8px;">
-          <button class="small" id="btn-save-resume" onclick="saveResume()">Зберегти</button>
-          <button class="small primary" onclick="exportFile('pdf')">Завантажити PDF</button>
-          <button class="small" onclick="exportFile('docx')">Завантажити DOCX</button>
-        </div>
-      </div>
-
-      <div id="page-warning" class="notice warn hidden">
-        Резюме перевищує рекомендовані 2 сторінки (<span id="est-pages">3</span> стор.). Рекомендуємо скоротити текст.
-      </div>
-
-      <div class="grid-2">
-        <div id="editor-left">
-          <div id="ai-panel" class="ai-box hidden">
-            <div class="toolbar" style="margin-bottom:6px;">
-              <strong id="ai-title" style="font-size:13.5px; color:#1e3a8a;">AI-варіанти</strong>
-              <button class="small" onclick="closeAiPanel()">Відхилити</button>
+          <div class="field-grid" style="margin-top:16px;">
+            <div>
+              <label class="field-label">Мови (формат: Мова — Рівень; через «;»)</label>
+              <input id="f-langs" placeholder="Українська — Рідна; Англійська — B2" oninput="updateLanguages(this.value)" />
             </div>
-            <div id="ai-disclaimer" style="font-size:12px; color:#1e40af;"></div>
-            <div id="ai-variants"></div>
-          </div>
-
-          <!-- Contacts -->
-          <div class="card" style="margin-bottom:14px;">
-            <h3 style="margin:0 0 10px; font-size:15px;">Контакти та ціль</h3>
-            <div class="field-grid">
-              <input id="f-first" placeholder="Ім'я" oninput="updateField('contacts.first_name', this.value)" />
-              <input id="f-last" placeholder="Прізвище" oninput="updateField('contacts.last_name', this.value)" />
-              <input id="f-email" placeholder="Email" oninput="updateField('contacts.email', this.value)" />
-              <input id="f-phone" placeholder="Телефон (+380...)" oninput="updateField('contacts.phone', this.value)" />
-              <input id="f-loc" placeholder="Місто" oninput="updateField('contacts.location', this.value)" />
-              <input id="f-role" placeholder="Бажана посада" oninput="updateField('target_role', this.value)" />
-              <input id="f-format" placeholder="Формат роботи" oninput="updateField('work_format', this.value)" />
-              <input id="f-salary" placeholder="Бажана зарплата" oninput="updateField('desired_salary', this.value)" />
+            <div>
+              <label class="field-label">Посилання (формат: GitHub: https://...; через «;»)</label>
+              <input id="f-links" placeholder="GitHub: https://github.com/..." oninput="updateLinks(this.value)" />
             </div>
           </div>
+        </div>
+      </div>
 
-          <!-- Block Order -->
-          <div class="card" style="margin-bottom:14px;">
-            <h3 style="margin:0 0 8px; font-size:14px;">Порядок блоків</h3>
-            <div id="block-order-list" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+      <!-- Right: Preview & ATS Checker -->
+      <div style="position:sticky; top:82px;">
+        <div class="showcase-shell">
+          <div class="showcase-bar">
+            <div class="segmented">
+              <button class="active" id="rtab-preview" onclick="setRightTab('preview')">Попередній перегляд A4</button>
+              <button id="rtab-ats" onclick="setRightTab('ats')">ATS-перевірка та вакансія</button>
+            </div>
+            <span id="rtab-pages" style="font-size:12px; font-weight:600; color:var(--text-2);">~1 стор. A4</span>
           </div>
 
-          <!-- Summary -->
-          <div class="card" style="margin-bottom:14px;">
-            <div class="toolbar" style="margin-bottom:8px;">
-              <h3 style="margin:0; font-size:15px;">Про себе</h3>
-              <div style="display:flex; gap:6px;">
-                <button class="small" onclick="aiGenerateSummary()">AI: 3 варіанти</button>
-                <button class="small" onclick="aiEditSummary()">AI: Покращити</button>
+          <div id="right-panel-preview" class="paper-sheet">
+            <iframe id="editor-preview" class="preview-frame" title="Попередній перегляд резюме"></iframe>
+          </div>
+
+          <div id="right-panel-ats" class="hidden">
+            <div class="card" style="padding:18px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                <div>
+                  <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--muted);">Готовність до ATS</div>
+                  <div id="ats-grade" style="font-size:18px; font-weight:800; margin-top:2px;">Оцінка...</div>
+                </div>
+                <div id="ats-big-score" style="font-family:'Plus Jakarta Sans',sans-serif; font-size:32px; font-weight:800; color:var(--ok);">—%</div>
               </div>
-            </div>
-            <textarea id="f-summary" rows="3" placeholder="Коротко про себе..." oninput="updateField('summary', this.value)"></textarea>
-          </div>
+              <div class="progress-bar"><div class="progress-fill" id="ats-progress" style="width:0%"></div></div>
 
-          <!-- Experience -->
-          <div class="card" style="margin-bottom:14px;">
-            <div class="toolbar" style="margin-bottom:8px;">
-              <h3 style="margin:0; font-size:15px;">Досвід роботи</h3>
-              <button class="small" onclick="addExperience()">+ Додати місце</button>
-            </div>
-            <div id="exp-list"></div>
-          </div>
+              <div id="ats-checks-list" style="margin-top:14px;"></div>
 
-          <!-- Education -->
-          <div class="card" style="margin-bottom:14px;">
-            <div class="toolbar" style="margin-bottom:8px;">
-              <h3 style="margin:0; font-size:15px;">Освіта</h3>
-              <button class="small" onclick="addEducation()">+ Додати освіту</button>
-            </div>
-            <div id="edu-list"></div>
-          </div>
-
-          <!-- Skills, Languages, Links -->
-          <div class="card" style="margin-bottom:14px;">
-            <h3 style="margin:0 0 8px; font-size:15px;">Навички, мови та посилання</h3>
-            <label class="field-label">Навички (через кому, макс. 30)</label>
-            <input id="f-skills" placeholder="Python, FastAPI, TypeScript, Docker" oninput="updateSkills(this.value)" />
-            <div class="field-grid" style="margin-top:10px;">
-              <div>
-                <label class="field-label">Мови (напр.: Українська — Рідна; Англійська — B2)</label>
-                <input id="f-langs" placeholder="Українська — Рідна; Англійська — B2" oninput="updateLanguages(this.value)" />
-              </div>
-              <div>
-                <label class="field-label">Посилання (напр.: GitHub: https://...)</label>
-                <input id="f-links" placeholder="GitHub: https://github.com/..." oninput="updateLinks(this.value)" />
+              <div style="margin-top:18px; padding-top:16px; border-top:1px solid var(--border);">
+                <label class="field-label">Перевірка ключових слів під конкретну вакансію (опціонально)</label>
+                <textarea id="ats-vacancy-input" rows="4" placeholder="Вставте опис вакансії з Work.ua, Djinni, DOU або LinkedIn — ми покажемо, яких ключових слів бракує в резюме..." oninput="scheduleAtsCheck()"></textarea>
+                <div id="ats-keywords-box" class="hidden" style="margin-top:12px;">
+                  <div style="font-size:12px; font-weight:700; color:var(--ok); margin-bottom:6px;">Знайдено в резюме:</div>
+                  <div id="ats-matched-kw" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;"></div>
+                  <div style="font-size:12px; font-weight:700; color:var(--warn); margin-bottom:6px;">Варто додати (якщо маєте цей досвід):</div>
+                  <div id="ats-missing-kw" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </section>
 
-        <div style="position:sticky; top:76px;">
-          <iframe id="editor-preview" class="preview-frame" title="Попередній перегляд резюме"></iframe>
-        </div>
-      </div>
-    </section>
+  <!-- SETTINGS VIEW -->
+  <section id="view-settings" class="container hidden" style="max-width:640px;">
+    <div class="card" style="margin-bottom:16px;">
+      <h2 style="margin:0 0 8px; font-family:'Plus Jakarta Sans',sans-serif;">Налаштування акаунта</h2>
+      <p id="settings-email" style="font-size:14px; color:var(--text-2); margin:0 0 16px;"></p>
+      <button onclick="exportPersonalData()">⬇ Експортувати мої персональні дані (JSON)</button>
+    </div>
+    <div class="card" style="border-color:var(--err-border); background:var(--err-bg);">
+      <h3 style="margin:0 0 6px; color:#991b1b;">Видалення акаунта</h3>
+      <p style="font-size:13.5px; color:#7f1d1d; margin:0 0 14px;">Ця дія остаточно видалить ваш профіль, резюме, журнали AI-запитів та всі згенеровані PDF/DOCX файли без можливості відновлення.</p>
+      <button class="danger" onclick="deleteAccount()">Видалити акаунт назавжди</button>
+    </div>
+  </section>
 
-    <!-- SETTINGS VIEW -->
-    <section id="view-settings" class="hidden" style="max-width:640px; margin:0 auto;">
-      <div class="card" style="margin-bottom:16px;">
-        <h2 style="margin-top:0;">Налаштування акаунта</h2>
-        <p id="settings-email" style="font-size:14px;"></p>
-        <button onclick="exportPersonalData()">Експортувати мої дані (JSON)</button>
-      </div>
-      <div class="card" style="border-color:#fecaca; background:#fef2f2;">
-        <h3 style="margin-top:0; color:#991b1b;">Видалення акаунта</h3>
-        <p style="font-size:13px; color:#7f1d1d;">Остаточно видаляє профіль, резюме, історію AI та всі експортовані PDF/DOCX файли.</p>
-        <button class="danger" onclick="deleteAccount()">Видалити акаунт назавжди</button>
-      </div>
-    </section>
-  </main>
+  <footer>
+    <div class="footer-inner">
+      <span>© 2026 ResumeCraft · ATS-генератор резюме з AI-підказками</span>
+      <a href="/docs" target="_blank">Документація API (Swagger)</a>
+    </div>
+  </footer>
 
   <script>
     const BLOCK_LABELS = {
@@ -428,7 +865,7 @@
         location: "Київ, Україна",
       },
       target_role: "Junior Python / Full-Stack Developer",
-      summary: "Студентка ІТ-напряму з досвідом розробки веб-сервісів на FastAPI та сучасного фронтенду. Вмію проєктувати REST API та доводити задачі до релізу.",
+      summary: "Студентка ІТ-напряму з практичним досвідом розробки веб-сервісів на FastAPI та TypeScript. Проєктую надійні REST API, оптимізую роботу з PostgreSQL і створюю чисті ATS-сумісні інтерфейси.",
       desired_salary: "від $800",
       work_format: "Гібрид / Віддалено",
       experiences: [
@@ -439,7 +876,10 @@
           start_date: "2025-02",
           end_date: "",
           is_current: true,
-          bullets: ["Розробила бекенд-сервіс на FastAPI з експортом PDF/DOCX та автотестами"],
+          bullets: [
+            "Розробила бекенд-сервіс на FastAPI з експортом PDF/DOCX та покрила функціонал 14 автотестами (100% pass rate)",
+            "Скоротила час створення ATS-резюме до 15 хвилин завдяки єдиному профілю та AI-підказкам",
+          ],
         },
       ],
       education: [
@@ -453,14 +893,13 @@
           is_current: true,
         },
       ],
-      skills: ["Python", "FastAPI", "TypeScript", "Next.js", "PostgreSQL", "Docker"],
-      languages: [{ name: "Українська", level: "Рідна" }, { name: "Англійська", level: "B2" }],
-      links: [{ label: "GitHub", url: "https://github.com/resumecraft-demo" }],
+      skills: ["Python", "FastAPI", "TypeScript", "Next.js", "PostgreSQL", "Docker", "Git"],
+      languages: [{ name: "Українська", level: "Рідна" }, { name: "Англійська", level: "B2 (Upper-Intermediate)" }],
+      links: [{ label: "GitHub", url: "https://github.com/AriSnowie97/generator_CV_AI" }],
     };
 
     const state = {
       token: localStorage.getItem("rc_token") || "",
-      user: null,
       view: "landing",
       authMode: "login",
       verifyToken: "",
@@ -468,18 +907,33 @@
       galleryTemplate: "minimal",
       templateId: "minimal",
       language: "uk",
+      rightTab: "preview",
       blockOrder: ["summary", "experience", "education", "skills", "languages", "links"],
       data: JSON.parse(JSON.stringify(DEMO_DATA)),
-      aiApplyFn: null,
       autosaveTimer: null,
       previewTimer: null,
+      atsTimer: null,
     };
 
     function showAlert(msg, type = "err") {
       const el = document.getElementById("global-alert");
       if (!msg) { el.classList.add("hidden"); return; }
-      el.textContent = msg;
+      el.innerHTML = `<span>${esc(msg)}</span><button class="small ghost" onclick="showAlert('')">✕</button>`;
       el.className = `notice ${type}`;
+    }
+
+    function esc(s) {
+      return String(s || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function autoSizeIframe(iframe) {
+      try {
+        const doc = iframe.contentDocument || iframe.contentWindow.document;
+        if (doc && doc.body) {
+          const h = Math.max(660, doc.body.scrollHeight + 24);
+          iframe.style.height = h + "px";
+        }
+      } catch {}
     }
 
     async function apiCall(path, opts = {}) {
@@ -501,15 +955,15 @@
       const nav = document.getElementById("nav-actions");
       if (!state.token) {
         nav.innerHTML = `
-          <button onclick="openDemo()">Демо-редактор</button>
+          <button class="ghost" onclick="openDemo()">Демо-редактор</button>
           <button onclick="navigate('login')">Увійти</button>
           <button class="primary" onclick="navigate('register')">Створити резюме</button>
         `;
       } else {
         nav.innerHTML = `
-          <button class="${state.view === 'profile' ? 'active-tab' : ''}" onclick="navigate('profile')">Профіль</button>
-          <button class="${state.view === 'editor' ? 'active-tab' : ''}" onclick="navigate('editor')">Редактор</button>
-          <button class="${state.view === 'settings' ? 'active-tab' : ''}" onclick="navigate('settings')">Налаштування</button>
+          <button class="${state.view === 'profile' ? 'active-tab' : 'ghost'}" onclick="navigate('profile')">Профіль</button>
+          <button class="${state.view === 'editor' ? 'active-tab' : 'ghost'}" onclick="navigate('editor')">Редактор</button>
+          <button class="${state.view === 'settings' ? 'active-tab' : 'ghost'}" onclick="navigate('settings')">Налаштування</button>
           <button onclick="logout()">Вийти</button>
         `;
       }
@@ -520,7 +974,10 @@
       if (view === "login" || view === "register") {
         state.authMode = view;
         state.view = "auth";
-        document.getElementById("auth-title").textContent = view === "login" ? "Вхід у ResumeCraft" : "Реєстрація";
+        document.getElementById("auth-title").textContent = view === "login" ? "Вхід у ResumeCraft" : "Створіть акаунт";
+        document.getElementById("auth-sub").textContent = view === "login"
+          ? "Продовжуйте роботу над вашим ATS-резюме."
+          : "Зберігайте профіль, отримуйте AI-підказки та експортуйте PDF і DOCX.";
         document.getElementById("auth-submit-btn").textContent = view === "login" ? "Увійти" : "Зареєструватися";
         document.getElementById("auth-consent-wrap").classList.toggle("hidden", view === "login");
         document.getElementById("verify-box").classList.add("hidden");
@@ -532,6 +989,7 @@
         document.getElementById(`view-${id}`).classList.toggle("hidden", state.view !== id);
       });
       renderNav();
+      window.scrollTo({ top: 0, behavior: "instant" });
 
       if (view === "landing") await renderGalleryPreview();
       if (view === "profile") await loadProfile();
@@ -560,15 +1018,26 @@
           data: DEMO_DATA,
         }),
       });
-      document.getElementById("landing-preview").srcdoc = await resp.text();
+      const iframe = document.getElementById("landing-preview");
+      iframe.onload = () => autoSizeIframe(iframe);
+      iframe.srcdoc = await resp.text();
     }
 
     function setGalleryTemplate(tpl) {
       state.galleryTemplate = tpl;
       ["minimal", "classic", "it"].forEach((id) => {
-        document.getElementById(`gal-btn-${id}`).classList.toggle("primary", id === tpl);
+        document.getElementById(`gal-btn-${id}`).classList.toggle("active", id === tpl);
       });
       renderGalleryPreview();
+    }
+
+    function setRightTab(tab) {
+      state.rightTab = tab;
+      document.getElementById("rtab-preview").classList.toggle("active", tab === "preview");
+      document.getElementById("rtab-ats").classList.toggle("active", tab === "ats");
+      document.getElementById("right-panel-preview").classList.toggle("hidden", tab !== "preview");
+      document.getElementById("right-panel-ats").classList.toggle("hidden", tab !== "ats");
+      if (tab === "ats") runAtsCheck();
     }
 
     async function submitAuth() {
@@ -607,7 +1076,7 @@
         await apiCall("/auth/verify-email", { method: "POST", body: JSON.stringify({ token: state.verifyToken }) });
         showAlert("Email успішно підтверджено!", "ok");
         state.demoMode = false;
-        setTimeout(() => navigate("editor"), 500);
+        setTimeout(() => navigate("editor"), 450);
       } catch (err) {
         showAlert(err.message);
       }
@@ -626,13 +1095,11 @@
         document.getElementById("prof-score").textContent = `${res.completeness_score}%`;
         document.getElementById("prof-progress").style.width = `${res.completeness_score}%`;
         document.getElementById("prof-missing").textContent = res.missing_blocks.length
-          ? `Рекомендуємо заповнити: ${res.missing_blocks.join(", ")}`
+          ? `Рекомендуємо дозаповнити: ${res.missing_blocks.join(", ")}`
           : "Профіль заповнений на 100%!";
         document.getElementById("profile-form-host").innerHTML = `
           <div class="card">
-            <p style="font-size:13.5px; color:var(--muted); margin-top:0;">
-              Контакти, досвід, освіта, навички, мови та посилання редагуються у зручному вигляді — натисніть «Зберегти профіль» або перейдіть у Редактор.
-            </p>
+            <h3 style="margin:0 0 12px; font-size:15.5px;">Основні дані профілю</h3>
             <div class="field-grid">
               <div><label class="field-label">Ім'я</label><input value="${esc(state.data.contacts.first_name)}" oninput="state.data.contacts.first_name=this.value; state.data.contacts.full_name=(this.value+' '+state.data.contacts.last_name).trim()" /></div>
               <div><label class="field-label">Прізвище</label><input value="${esc(state.data.contacts.last_name)}" oninput="state.data.contacts.last_name=this.value; state.data.contacts.full_name=(state.data.contacts.first_name+' '+this.value).trim()" /></div>
@@ -640,6 +1107,7 @@
               <div><label class="field-label">Телефон</label><input value="${esc(state.data.contacts.phone)}" oninput="state.data.contacts.phone=this.value" /></div>
               <div><label class="field-label">Бажана посада</label><input value="${esc(state.data.target_role)}" oninput="state.data.target_role=this.value" /></div>
               <div><label class="field-label">Місто</label><input value="${esc(state.data.contacts.location)}" oninput="state.data.contacts.location=this.value" /></div>
+              <div class="field-full"><label class="field-label">Про себе</label><textarea rows="3" oninput="state.data.summary=this.value">${esc(state.data.summary)}</textarea></div>
             </div>
           </div>
         `;
@@ -679,23 +1147,20 @@
       const el = document.getElementById("quota-badge");
       if (state.demoMode || !q) { el.classList.add("hidden"); return; }
       el.classList.remove("hidden");
-      el.textContent = `AI: ${q.remaining_today}/${q.daily_limit} на добу`;
+      el.textContent = `AI: ${q.remaining_today}/${q.daily_limit}`;
     }
 
     function updatePageWarning(pages, warn) {
       document.getElementById("est-pages").textContent = pages;
+      document.getElementById("rtab-pages").textContent = `~${pages} стор. A4`;
       document.getElementById("page-warning").classList.toggle("hidden", !warn);
-    }
-
-    function esc(s) {
-      return String(s || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
     }
 
     function syncEditorUI() {
       document.getElementById("demo-banner").classList.toggle("hidden", !state.demoMode);
       document.getElementById("btn-save-resume").classList.toggle("hidden", state.demoMode);
       ["minimal", "classic", "it"].forEach((id) => {
-        document.getElementById(`tpl-btn-${id}`).classList.toggle("primary", id === state.templateId);
+        document.getElementById(`tpl-btn-${id}`).classList.toggle("active", id === state.templateId);
       });
       document.getElementById("resume-lang").value = state.language;
 
@@ -709,14 +1174,43 @@
       document.getElementById("f-format").value = d.work_format || "";
       document.getElementById("f-salary").value = d.desired_salary || "";
       document.getElementById("f-summary").value = d.summary || "";
-      document.getElementById("f-skills").value = (d.skills || []).join(", ");
       document.getElementById("f-langs").value = (d.languages || []).map((l) => `${l.name} — ${l.level}`).join("; ");
       document.getElementById("f-links").value = (d.links || []).map((l) => `${l.label}: ${l.url}`).join("; ");
 
+      renderSkillsChips();
       renderBlockOrder();
       renderExperiences();
       renderEducation();
       schedulePreview();
+      scheduleAtsCheck();
+    }
+
+    function renderSkillsChips() {
+      const host = document.getElementById("skills-chips");
+      host.innerHTML = (state.data.skills || [])
+        .map((s, i) => `<span class="chip">${esc(s)}<button class="chip-remove" type="button" onclick="removeSkill(${i})">×</button></span>`)
+        .join("");
+    }
+
+    function addSkillFromInput() {
+      const inp = document.getElementById("f-skill-input");
+      const raw = inp.value.trim();
+      if (!raw) return;
+      const parts = raw.split(",").map((x) => x.trim()).filter(Boolean);
+      const merged = [...(state.data.skills || [])];
+      for (const p of parts) {
+        if (merged.length < 30 && !merged.includes(p)) merged.push(p);
+      }
+      state.data.skills = merged;
+      inp.value = "";
+      renderSkillsChips();
+      onDataMutated();
+    }
+
+    function removeSkill(idx) {
+      state.data.skills.splice(idx, 1);
+      renderSkillsChips();
+      onDataMutated();
     }
 
     function renderBlockOrder() {
@@ -725,8 +1219,8 @@
         .map((b, i) => `
           <span class="chip">
             ${BLOCK_LABELS[b] || b}
-            <button class="small" onclick="moveBlock(${i}, -1)" ${i === 0 ? "disabled" : ""}>↑</button>
-            <button class="small" onclick="moveBlock(${i}, 1)" ${i === state.blockOrder.length - 1 ? "disabled" : ""}>↓</button>
+            <button class="small ghost" style="padding:1px 5px;" onclick="moveBlock(${i}, -1)" ${i === 0 ? "disabled" : ""}>↑</button>
+            <button class="small ghost" style="padding:1px 5px;" onclick="moveBlock(${i}, 1)" ${i === state.blockOrder.length - 1 ? "disabled" : ""}>↓</button>
           </span>
         `)
         .join("");
@@ -743,31 +1237,36 @@
 
     function renderExperiences() {
       const host = document.getElementById("exp-list");
-      host.innerHTML = (state.data.experiences || [])
+      if (!state.data.experiences.length) {
+        host.innerHTML = `<p style="font-size:13px; color:var(--muted); margin:8px 0 0;">Ще не додано досвіду — додайте роботу, стажування або навчальний проєкт.</p>`;
+        return;
+      }
+      host.innerHTML = state.data.experiences
         .map((exp, ei) => `
-          <div class="exp-box">
-            <div class="toolbar" style="margin-bottom:6px;">
-              <strong style="font-size:12.5px;">Досвід #${ei + 1}</strong>
-              <button class="small" onclick="removeExp(${ei})">Видалити</button>
+          <div class="sub-card">
+            <div class="toolbar" style="margin-bottom:8px;">
+              <strong style="font-size:13px; color:var(--text-2);">Досвід #${ei + 1}</strong>
+              <button class="small ghost" style="color:var(--err);" onclick="removeExp(${ei})">Видалити</button>
             </div>
             <div class="field-grid">
-              <input placeholder="Посада" value="${esc(exp.position)}" oninput="state.data.experiences[${ei}].position=this.value; onDataMutated()" />
-              <input placeholder="Компанія" value="${esc(exp.company)}" oninput="state.data.experiences[${ei}].company=this.value; onDataMutated()" />
-              <input type="month" value="${esc(exp.start_date)}" oninput="state.data.experiences[${ei}].start_date=this.value; onDataMutated()" />
-              <input type="month" value="${esc(exp.end_date)}" ${exp.is_current ? "disabled" : ""} oninput="state.data.experiences[${ei}].end_date=this.value; onDataMutated()" />
+              <div><label class="field-label">Посада</label><input placeholder="Junior Developer" value="${esc(exp.position)}" oninput="state.data.experiences[${ei}].position=this.value; onDataMutated()" /></div>
+              <div><label class="field-label">Компанія / Проєкт</label><input placeholder="DUICT Lab" value="${esc(exp.company)}" oninput="state.data.experiences[${ei}].company=this.value; onDataMutated()" /></div>
+              <div><label class="field-label">Початок</label><input type="month" value="${esc(exp.start_date)}" oninput="state.data.experiences[${ei}].start_date=this.value; onDataMutated()" /></div>
+              <div><label class="field-label">Завершення</label><input type="month" value="${esc(exp.end_date)}" ${exp.is_current ? "disabled" : ""} oninput="state.data.experiences[${ei}].end_date=this.value; onDataMutated()" /></div>
             </div>
-            <label style="font-size:12px; display:flex; gap:6px; align-items:center; margin-top:6px;">
+            <label style="font-size:12.5px; display:inline-flex; gap:6px; align-items:center; margin-top:8px; color:var(--text-2); cursor:pointer;">
               <input type="checkbox" style="width:auto;" ${exp.is_current ? "checked" : ""} onchange="state.data.experiences[${ei}].is_current=this.checked; if(this.checked) state.data.experiences[${ei}].end_date=''; renderExperiences(); onDataMutated()" />
               Працюю зараз
             </label>
-            <div style="margin-top:8px;">
+            <div style="margin-top:10px;">
+              <label class="field-label">Досягнення (пункти списку)</label>
               ${(exp.bullets || []).map((b, bi) => `
                 <div style="display:flex; gap:6px; margin-top:6px;">
-                  <input value="${esc(b)}" placeholder="Досягнення..." oninput="state.data.experiences[${ei}].bullets[${bi}]=this.value; onDataMutated()" />
-                  <button class="small" onclick="aiImproveBullet(${ei}, ${bi})">AI</button>
+                  <input value="${esc(b)}" placeholder="Дія + результат + цифра..." oninput="state.data.experiences[${ei}].bullets[${bi}]=this.value; onDataMutated()" />
+                  <button class="small soft-brand" type="button" onclick="aiImproveBullet(${ei}, ${bi})" title="Покращити з AI">✨ AI</button>
                 </div>
               `).join("")}
-              <button class="small" style="margin-top:6px;" onclick="state.data.experiences[${ei}].bullets.push(''); renderExperiences()">+ Пункт</button>
+              <button class="small ghost" style="margin-top:6px; color:var(--brand);" onclick="state.data.experiences[${ei}].bullets.push(''); renderExperiences()">+ Додати пункт досягнення</button>
             </div>
           </div>
         `)
@@ -776,17 +1275,21 @@
 
     function renderEducation() {
       const host = document.getElementById("edu-list");
-      host.innerHTML = (state.data.education || [])
+      if (!state.data.education.length) {
+        host.innerHTML = `<p style="font-size:13px; color:var(--muted); margin:8px 0 0;">Додайте університет, коледж або профільні курси.</p>`;
+        return;
+      }
+      host.innerHTML = state.data.education
         .map((edu, idx) => `
-          <div class="exp-box">
-            <div class="toolbar" style="margin-bottom:6px;">
-              <strong style="font-size:12.5px;">Освіта #${idx + 1}</strong>
-              <button class="small" onclick="state.data.education.splice(${idx},1); renderEducation(); onDataMutated()">Видалити</button>
+          <div class="sub-card">
+            <div class="toolbar" style="margin-bottom:8px;">
+              <strong style="font-size:13px; color:var(--text-2);">Освіта #${idx + 1}</strong>
+              <button class="small ghost" style="color:var(--err);" onclick="state.data.education.splice(${idx},1); renderEducation(); onDataMutated()">Видалити</button>
             </div>
             <div class="field-grid">
-              <input placeholder="Заклад" value="${esc(edu.institution)}" oninput="state.data.education[${idx}].institution=this.value; onDataMutated()" />
-              <input placeholder="Ступінь" value="${esc(edu.degree)}" oninput="state.data.education[${idx}].degree=this.value; onDataMutated()" />
-              <input placeholder="Спеціальність" value="${esc(edu.field_of_study)}" oninput="state.data.education[${idx}].field_of_study=this.value; onDataMutated()" />
+              <div class="field-full"><label class="field-label">Навчальний заклад</label><input placeholder="Назва університету" value="${esc(edu.institution)}" oninput="state.data.education[${idx}].institution=this.value; onDataMutated()" /></div>
+              <div><label class="field-label">Ступінь</label><input placeholder="Бакалавр" value="${esc(edu.degree)}" oninput="state.data.education[${idx}].degree=this.value; onDataMutated()" /></div>
+              <div><label class="field-label">Спеціальність</label><input placeholder="Інформаційні технології" value="${esc(edu.field_of_study)}" oninput="state.data.education[${idx}].field_of_study=this.value; onDataMutated()" /></div>
             </div>
           </div>
         `)
@@ -825,11 +1328,6 @@
       onDataMutated();
     }
 
-    function updateSkills(val) {
-      state.data.skills = val.split(",").map((s) => s.trim()).filter(Boolean).slice(0, 30);
-      onDataMutated();
-    }
-
     function updateLanguages(val) {
       state.data.languages = val.split(";").map((item) => {
         const [name, level = ""] = item.split("—").map((x) => x.trim());
@@ -850,7 +1348,7 @@
     function setTemplate(tpl) {
       state.templateId = tpl;
       ["minimal", "classic", "it"].forEach((id) => {
-        document.getElementById(`tpl-btn-${id}`).classList.toggle("primary", id === tpl);
+        document.getElementById(`tpl-btn-${id}`).classList.toggle("active", id === tpl);
       });
       onDataMutated();
     }
@@ -862,6 +1360,7 @@
 
     function onDataMutated() {
       schedulePreview();
+      scheduleAtsCheck();
       scheduleAutosave();
     }
 
@@ -878,14 +1377,69 @@
             data: state.data,
           }),
         });
-        document.getElementById("editor-preview").srcdoc = await resp.text();
+        const iframe = document.getElementById("editor-preview");
+        iframe.onload = () => autoSizeIframe(iframe);
+        iframe.srcdoc = await resp.text();
       }, 220);
+    }
+
+    function scheduleAtsCheck() {
+      if (state.atsTimer) clearTimeout(state.atsTimer);
+      state.atsTimer = setTimeout(runAtsCheck, 350);
+    }
+
+    async function runAtsCheck() {
+      try {
+        const vac = document.getElementById("ats-vacancy-input")?.value || "";
+        const res = await apiCall("/resume/ats-check", {
+          method: "POST",
+          body: JSON.stringify({
+            data: state.data,
+            template_id: state.templateId,
+            language: state.language,
+            vacancy_text: vac,
+          }),
+        });
+        const pill = document.getElementById("ats-score-pill");
+        pill.textContent = `ATS: ${res.score}/100`;
+        pill.className = `ats-pill ${res.score >= 85 ? "" : res.score >= 65 ? "mid" : "low"}`;
+
+        document.getElementById("ats-big-score").textContent = `${res.score}%`;
+        document.getElementById("ats-big-score").style.color =
+          res.score >= 85 ? "var(--ok)" : res.score >= 65 ? "var(--warn)" : "var(--err)";
+        document.getElementById("ats-grade").textContent = res.grade;
+        document.getElementById("ats-progress").style.width = `${res.score}%`;
+        updatePageWarning(res.estimated_pages, res.estimated_pages > 2);
+
+        document.getElementById("ats-checks-list").innerHTML = res.checks
+          .map((c) => `
+            <div class="ats-row">
+              <span class="ats-dot ${c.passed ? "pass" : "fail"}">${c.passed ? "✓" : "!"}</span>
+              <div>
+                <div style="font-size:13px; font-weight:700;">${esc(c.label)}</div>
+                <div style="font-size:12px; color:var(--muted); margin-top:2px;">${esc(c.tip)}</div>
+              </div>
+            </div>
+          `)
+          .join("");
+
+        const hasKw = res.matched_keywords.length > 0 || res.missing_keywords.length > 0;
+        document.getElementById("ats-keywords-box").classList.toggle("hidden", !hasKw);
+        if (hasKw) {
+          document.getElementById("ats-matched-kw").innerHTML = res.matched_keywords.length
+            ? res.matched_keywords.map((k) => `<span class="chip green">✓ ${esc(k)}</span>`).join("")
+            : `<span style="font-size:12px; color:var(--muted);">Поки немає збігів</span>`;
+          document.getElementById("ats-missing-kw").innerHTML = res.missing_keywords.length
+            ? res.missing_keywords.map((k) => `<span class="chip amber">+ ${esc(k)}</span>`).join("")
+            : `<span style="font-size:12px; color:var(--ok);">Усі ключові слова вакансії покрито!</span>`;
+        }
+      } catch {}
     }
 
     function scheduleAutosave() {
       if (state.demoMode || !state.token) return;
       if (state.autosaveTimer) clearTimeout(state.autosaveTimer);
-      state.autosaveTimer = setTimeout(() => saveResume(true), 900);
+      state.autosaveTimer = setTimeout(() => saveResume(true), 950);
     }
 
     async function saveResume(silent = false) {
@@ -901,18 +1455,16 @@
             data: state.data,
           }),
         });
-        document.getElementById("save-badge").textContent = silent ? "Автозбережено" : "Збережено";
+        document.getElementById("save-badge").textContent = silent ? "● Автозбережено" : "● Збережено";
         updatePageWarning(res.estimated_pages, res.page_warning);
-        showAlert("");
       } catch (err) {
         showAlert(err.message);
       }
     }
 
     function showAiPanel(title, res, applyFn) {
-      state.aiApplyFn = applyFn;
       updateQuotaBadge(res.quota);
-      document.getElementById("ai-title").textContent = title;
+      document.getElementById("ai-title").textContent = `✨ ${title}`;
       document.getElementById("ai-disclaimer").textContent = res.disclaimer;
       const host = document.getElementById("ai-variants");
       host.innerHTML = "";
@@ -934,6 +1486,7 @@
         host.appendChild(row);
       });
       document.getElementById("ai-panel").classList.remove("hidden");
+      document.getElementById("ai-panel").scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
 
     function closeAiPanel() {
@@ -941,7 +1494,7 @@
     }
 
     async function aiGenerateSummary() {
-      if (state.demoMode) { showAlert("AI-помічник доступний після входу або реєстрації."); return; }
+      if (state.demoMode) { showAlert("AI-помічник доступний після безкоштовної реєстрації."); return; }
       try {
         const res = await apiCall("/ai/generate-summary", {
           method: "POST",
@@ -953,24 +1506,22 @@
             language: state.language,
           }),
         });
-        showAiPanel("Варіанти «Про себе»", res, (chosen) => {
+        showAiPanel("Варіанти блоку «Про себе»", res, (chosen) => {
           state.data.summary = chosen;
           syncEditorUI();
           scheduleAutosave();
         });
-      } catch (err) {
-        showAlert(err.message);
-      }
+      } catch (err) { showAlert(err.message); }
     }
 
     async function aiEditSummary() {
-      if (state.demoMode) { showAlert("AI-помічник доступний після входу або реєстрації."); return; }
+      if (state.demoMode) { showAlert("AI-помічник доступний після безкоштовної реєстрації."); return; }
       try {
         const res = await apiCall("/ai/edit-text", {
           method: "POST",
           body: JSON.stringify({
             selected_text: state.data.summary,
-            instruction: "Зроби формулювання чіткішим і професійнішим",
+            instruction: "Зроби формулювання чіткішим і придатним для ATS",
             language: state.language,
           }),
         });
@@ -979,13 +1530,11 @@
           syncEditorUI();
           scheduleAutosave();
         });
-      } catch (err) {
-        showAlert(err.message);
-      }
+      } catch (err) { showAlert(err.message); }
     }
 
     async function aiImproveBullet(ei, bi) {
-      if (state.demoMode) { showAlert("AI-помічник доступний після входу або реєстрації."); return; }
+      if (state.demoMode) { showAlert("AI-помічник доступний після безкоштовної реєстрації."); return; }
       const exp = state.data.experiences[ei];
       try {
         const res = await apiCall("/ai/improve-bullet", {
@@ -998,18 +1547,16 @@
             language: state.language,
           }),
         });
-        showAiPanel("Покращення пункту досвіду", res, (chosen) => {
+        showAiPanel("Покращення досягнення (дія + результат + цифра)", res, (chosen) => {
           state.data.experiences[ei].bullets[bi] = chosen;
           syncEditorUI();
           scheduleAutosave();
         });
-      } catch (err) {
-        showAlert(err.message);
-      }
+      } catch (err) { showAlert(err.message); }
     }
 
     async function exportFile(format) {
-      if (state.demoMode) { showAlert("Експорт PDF/DOCX доступний після реєстрації."); return; }
+      if (state.demoMode) { showAlert("Експорт у PDF і DOCX доступний після безкоштовної реєстрації."); return; }
       try {
         const resp = await fetch("/api/export", {
           method: "POST",
@@ -1035,19 +1582,15 @@
         a.remove();
         URL.revokeObjectURL(url);
         showAlert(`Файл завантажено: ${filename}`, "ok");
-      } catch (err) {
-        showAlert(err.message);
-      }
+      } catch (err) { showAlert(err.message); }
     }
 
     async function loadSettings() {
       try {
         const u = await apiCall("/auth/me");
         document.getElementById("settings-email").innerHTML =
-          `Email: <strong>${esc(u.email)}</strong> (${u.is_email_verified ? "Підтверджено" : "Не підтверджено"})`;
-      } catch (err) {
-        showAlert(err.message);
-      }
+          `Email: <strong>${esc(u.email)}</strong> <span class="chip ${u.is_email_verified ? 'green' : 'amber'}" style="margin-left:6px;">${u.is_email_verified ? "Підтверджено" : "Не підтверджено"}</span>`;
+      } catch (err) { showAlert(err.message); }
     }
 
     async function exportPersonalData() {
@@ -1060,23 +1603,18 @@
         a.download = "resumecraft_personal_data.json";
         a.click();
         URL.revokeObjectURL(url);
-      } catch (err) {
-        showAlert(err.message);
-      }
+      } catch (err) { showAlert(err.message); }
     }
 
     async function deleteAccount() {
-      if (!confirm("Точно видалити акаунт і всі файли без відновлення?")) return;
+      if (!confirm("Точно остаточно видалити акаунт, резюме та всі експортовані файли?")) return;
       try {
         await apiCall("/settings/account", { method: "DELETE" });
         logout();
-        showAlert("Акаунт і всі дані остаточно видалено.", "ok");
-      } catch (err) {
-        showAlert(err.message);
-      }
+        showAlert("Акаунт і всі пов'язані дані остаточно видалено.", "ok");
+      } catch (err) { showAlert(err.message); }
     }
 
-    // Boot
     (async function init() {
       if (state.token) {
         try {
