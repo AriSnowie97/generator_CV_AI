@@ -516,6 +516,34 @@
     }
     .chip-remove:hover { color: var(--err); background: transparent; }
 
+    /* Profile / Resume Photo Upload */
+    .photo-upload-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px dashed var(--border-strong);
+      background: var(--subcard-bg);
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .avatar-preview {
+      width: 62px;
+      height: 62px;
+      border-radius: 14px;
+      object-fit: cover;
+      border: 1.5px solid var(--border);
+      background: var(--surface-soft);
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 22px;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .avatar-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
     /* Experience & Education boxes */
     .sub-card {
       border: 1px solid var(--border);
@@ -959,6 +987,18 @@
         <!-- Contacts -->
         <div class="card" style="margin-bottom:16px;">
           <h3 style="margin:0 0 12px; font-size:15.5px;">1. Контакти та цільова посада</h3>
+          <div class="photo-upload-row">
+            <div class="avatar-preview" id="editor-photo-preview">👤</div>
+            <div style="flex:1 1 180px;">
+              <div style="font-size:13px; font-weight:700;">Фото для резюме</div>
+              <div style="font-size:12px; color:var(--muted);">JPG, PNG або WebP (до 5 МБ) · зберігається у профілі та вставляється у PDF і DOCX</div>
+            </div>
+            <div class="toolbar-group">
+              <input type="file" id="editor-photo-input" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="handlePhotoFileSelect(event)" />
+              <button class="small soft-brand" type="button" onclick="document.getElementById('editor-photo-input').click()">📷 Завантажити фото</button>
+              <button class="small ghost hidden" id="editor-photo-remove" type="button" style="color:var(--err);" onclick="handleRemovePhoto()">Видалити</button>
+            </div>
+          </div>
           <div class="field-grid">
             <div><label class="field-label">Ім'я</label><input id="f-first" placeholder="Аріна" oninput="updateField('contacts.first_name', this.value)" /></div>
             <div><label class="field-label">Прізвище</label><input id="f-last" placeholder="Бадовська" oninput="updateField('contacts.last_name', this.value)" /></div>
@@ -1397,9 +1437,24 @@
         document.getElementById("prof-missing").textContent = res.missing_blocks.length
           ? `Рекомендуємо дозаповнити: ${res.missing_blocks.join(", ")}`
           : "Профіль заповнений на 100%!";
+        const photoUri = state.data.contacts.photo_url || "";
         document.getElementById("profile-form-host").innerHTML = `
           <div class="card">
-            <h3 style="margin:0 0 12px; font-size:15.5px;">Основні дані профілю</h3>
+            <h3 style="margin:0 0 12px; font-size:15.5px;">Фото для резюме</h3>
+            <div class="photo-upload-row">
+              <div class="avatar-preview" id="profile-photo-preview">${photoUri ? `<img src="${photoUri}" alt="Фото профілю" />` : "👤"}</div>
+              <div style="flex:1 1 200px;">
+                <div style="font-size:13.5px; font-weight:700;">Аватар кандидата</div>
+                <div style="font-size:12px; color:var(--muted);">Завантажте фото (JPG, PNG або WebP, до 5 МБ) — воно автоматично підтягнеться у ваше резюме (прев'ю, PDF та DOCX).</div>
+              </div>
+              <div class="toolbar-group">
+                <input type="file" id="profile-photo-input" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="handlePhotoFileSelect(event)" />
+                <button class="small primary" type="button" onclick="document.getElementById('profile-photo-input').click()">📷 Завантажити фото</button>
+                <button class="small ghost ${photoUri ? "" : "hidden"}" id="profile-photo-remove" type="button" style="color:var(--err);" onclick="handleRemovePhoto()">Видалити</button>
+              </div>
+            </div>
+
+            <h3 style="margin:18px 0 12px; font-size:15.5px;">Основні дані профілю</h3>
             <div class="field-grid">
               <div><label class="field-label">Ім'я</label><input value="${esc(state.data.contacts.first_name)}" oninput="state.data.contacts.first_name=this.value; state.data.contacts.full_name=(this.value+' '+state.data.contacts.last_name).trim()" /></div>
               <div><label class="field-label">Прізвище</label><input value="${esc(state.data.contacts.last_name)}" oninput="state.data.contacts.last_name=this.value; state.data.contacts.full_name=(state.data.contacts.first_name+' '+this.value).trim()" /></div>
@@ -1477,12 +1532,109 @@
       document.getElementById("f-langs").value = (d.languages || []).map((l) => `${l.name} — ${l.level}`).join("; ");
       document.getElementById("f-links").value = (d.links || []).map((l) => `${l.label}: ${l.url}`).join("; ");
 
+      renderPhotoPreviews();
       renderSkillsChips();
       renderBlockOrder();
       renderExperiences();
       renderEducation();
       schedulePreview();
       scheduleAtsCheck();
+    }
+
+    function renderPhotoPreviews() {
+      const uri = (state.data.contacts && state.data.contacts.photo_url) || "";
+      const html = uri ? `<img src="${uri}" alt="Фото кандидата" />` : "👤";
+      const edBox = document.getElementById("editor-photo-preview");
+      if (edBox) edBox.innerHTML = html;
+      const edRem = document.getElementById("editor-photo-remove");
+      if (edRem) edRem.classList.toggle("hidden", !uri);
+
+      const prBox = document.getElementById("profile-photo-preview");
+      if (prBox) prBox.innerHTML = html;
+      const prRem = document.getElementById("profile-photo-remove");
+      if (prRem) prRem.classList.toggle("hidden", !uri);
+    }
+
+    function resizePhotoClientSide(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("Не вдалося прочитати файл"));
+        reader.onload = () => {
+          const img = new Image();
+          img.onerror = () => reject(new Error("Некоректний файл зображення"));
+          img.onload = () => {
+            const size = 320;
+            const canvas = document.createElement("canvas");
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext("2d");
+            const minSide = Math.min(img.width, img.height);
+            const sx = (img.width - minSide) / 2;
+            const sy = (img.height - minSide) / 2;
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, size, size);
+            ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+            resolve(canvas.toDataURL("image/jpeg", 0.85));
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function handlePhotoFileSelect(event) {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        showAlert("Максимальний розмір фото — 5 МБ.");
+        return;
+      }
+      showAlert("");
+      try {
+        if (!state.demoMode && state.token) {
+          const form = new FormData();
+          form.append("file", file);
+          const resp = await fetch("/api/profile/photo", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${state.token}` },
+            body: form,
+          });
+          if (!resp.ok) {
+            let msg = "Не вдалося завантажити фото";
+            try { const j = await resp.json(); if (j.detail) msg = j.detail; } catch {}
+            throw new Error(msg);
+          }
+          const updated = await resp.json();
+          state.data.contacts.photo_url = updated.data.contacts.photo_url || "";
+          renderPhotoPreviews();
+          if (state.view === "editor") schedulePreview();
+          showAlert("Фото завантажено в профіль та автоматично додано до резюме!", "ok");
+        } else {
+          const dataUri = await resizePhotoClientSide(file);
+          state.data.contacts.photo_url = dataUri;
+          renderPhotoPreviews();
+          schedulePreview();
+          showAlert("Фото додано у демо-резюме (увійдіть, щоб зберегти в профілі).", "ok");
+        }
+      } catch (err) {
+        showAlert(err.message);
+      }
+    }
+
+    async function handleRemovePhoto() {
+      showAlert("");
+      try {
+        if (!state.demoMode && state.token) {
+          await apiCall("/profile/photo", { method: "DELETE" });
+        }
+        state.data.contacts.photo_url = "";
+        renderPhotoPreviews();
+        if (state.view === "editor") schedulePreview();
+        showAlert("Фото видалено з профілю та резюме.", "ok");
+      } catch (err) {
+        showAlert(err.message);
+      }
     }
 
     function renderSkillsChips() {

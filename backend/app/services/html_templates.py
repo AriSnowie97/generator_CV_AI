@@ -195,6 +195,7 @@ def _template_css(template_id: Literal["minimal", "classic", "it"]) -> str:
             font-size: 9.5pt;
         }
         h1 { font-size: 16pt; }
+        .cv-photo { width: 60px; height: 60px; }
         .target-role { font-size: 10.5pt; }
         .cv-item-header {
             flex-direction: column;
@@ -208,6 +209,16 @@ def _template_css(template_id: Literal["minimal", "classic", "it"]) -> str:
         }
     }
     h1 { margin: 0 0 3px 0; font-size: 20pt; line-height: 1.15; letter-spacing: -0.01em; }
+    .cv-header-inner { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+    .cv-header-text { flex: 1 1 auto; min-width: 0; }
+    .cv-photo {
+        width: 78px;
+        height: 78px;
+        border-radius: 12px;
+        object-fit: cover;
+        flex-shrink: 0;
+        border: 1.5px solid #e5e7eb;
+    }
     .target-role { font-size: 11.5pt; margin: 0 0 7px 0; }
     .contacts-line { font-size: 9.2pt; color: #374151; line-height: 1.5; }
     .contacts-line .sep { color: #9ca3af; margin: 0 6px; }
@@ -247,6 +258,8 @@ def _template_css(template_id: Literal["minimal", "classic", "it"]) -> str:
         return base + """
         body { font-family: Georgia, "Times New Roman", "Liberation Serif", serif; }
         .cv-header { text-align: center; border-bottom: 1.5px solid #111827; padding-bottom: 10px; }
+        .cv-header-inner { flex-direction: column; justify-content: center; gap: 10px; }
+        .cv-photo { border-radius: 50%; border-color: #cbd5e1; order: -1; }
         .target-role { color: #374151; font-style: italic; }
         .cv-section h2 { border-bottom: 1px solid #9ca3af; padding-bottom: 3px; color: #111827; }
         """
@@ -255,6 +268,7 @@ def _template_css(template_id: Literal["minimal", "classic", "it"]) -> str:
         return base + """
         body { font-family: "Segoe UI", Arial, "Liberation Sans", "DejaVu Sans", sans-serif; }
         .cv-header { border-left: 3.5px solid #2563eb; padding-left: 14px; padding-bottom: 2px; }
+        .cv-photo { border-radius: 50%; border: 2px solid #bfdbfe; }
         h1 { color: #0f172a; }
         .target-role { color: #1d4ed8; font-weight: 600; }
         .cv-section h2 { color: #1d4ed8; border-bottom: 1px solid #dbeafe; padding-bottom: 3px; }
@@ -304,6 +318,12 @@ def render_resume_html(
     sections_html = "".join(_render_section(b, data, labels, template_id) for b in block_order)
     brand_text = "Створено в ResumeCraft™" if language == "uk" else "Created with ResumeCraft™"
     brand_html = f'<footer class="cv-brand">{brand_text}</footer>' if show_branding else ""
+    photo_uri = (data.contacts.photo_url or "").strip()
+    photo_html = (
+        f'<img class="cv-photo" src="{photo_uri}" alt="{_e(name)}" />'
+        if photo_uri.startswith("data:image/")
+        else ""
+    )
 
     return f"""<!DOCTYPE html>
 <html lang="{_e(language)}">
@@ -317,9 +337,14 @@ def render_resume_html(
 </head>
 <body>
   <header class="cv-header">
-    <h1>{_e(name)}</h1>
-    {f'<div class="target-role">{_e(data.target_role)}</div>' if data.target_role.strip() else ''}
-    <div class="contacts-line">{contacts_html}</div>
+    <div class="cv-header-inner">
+      <div class="cv-header-text">
+        <h1>{_e(name)}</h1>
+        {f'<div class="target-role">{_e(data.target_role)}</div>' if data.target_role.strip() else ''}
+        <div class="contacts-line">{contacts_html}</div>
+      </div>
+      {photo_html}
+    </div>
   </header>
   <main>
     {sections_html}

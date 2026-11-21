@@ -1,9 +1,16 @@
-"""User profile management and completeness scoring."""
+"""User profile management, photo processing, and completeness scoring."""
 
+import base64
+import io
+
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.models import EventLog, Profile, Resume, User
 from app.schemas.profile import ProfileData
+
+MAX_PHOTO_BYTES = 5 * 1024 * 1024  # 5 MB
+ALLOWED_PHOTO_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
 
 
 def calculate_completeness(data: ProfileData) -> tuple[int, list[str]]:
@@ -61,6 +68,66 @@ def update_profile(db: Session, user: User, data: ProfileData, sync_resume: bool
             resume.data_json = data.model_dump()
 
     db.add(EventLog(user_id=user.id, event_type="profile_updated", metadata_json={"score": score}))
+    db.commit()
+    db.refresh(profile)
+    return profile
+
+
+def process_photo_bytes(raw_bytes: bytes, content_type: str | None) -> str:
+    """Validate uploaded image (type, size, magic bytes), fix EXIF rotation, crop to 320x320 JPEG data URI."""
+    if not raw_bytes:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Файл зображення порожній")
+    if len(raw_bytes) > MAX_PHOTO_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Розмір фото не може перевищувати 5 МБ",
+        )
+    if content_type and content_type.lower() not in ALLOWED_PHOTO_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Підтримуються лише зображення JPG, PNG або WebP",
+        )
+
+    try:
+        from PIL import Image, ImageOps
+
+        with Image.open(io.BytesIO(raw_bytes)) as img:
+            img = ImageOps.exif_transpose(img)
+            if img.mode in ("RGBA", "LA", "P"):
+                bg = Image.new("RGB", img.size, (255, 255, 255))
+                if img.mode == "P":
+                    img = img.convert("RGBA")
+                bg.paste(img, mask=img.split()[-1] if img.mode in ("RGBA", "LA") else None)
+                img = bg
+            else:
+                img = img.convert("RGB")
+            cropped = ImageOps.fit(img, (320, 320), method=Image.Resampling.LANCZOS)
+            out = io.BytesIO()
+            cropped.save(out, format="JPEG", quality=85, optimize=True)
+            encoded = base64.b64encode(out.getvalue()).decode("ascii")
+            return f"data:image/jpeg;base64,{encoded}"
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Не вдалося прочитати зображення. Переконайтеся, що це коректний JPG, PNG або WebP файл.",
+        ) from exc
+
+
+def set_profile_photo(db: Session, user: User, photo_data_uri: str) -> Profile:
+    """Attach or remove profile photo and sync it directly into the user's resume."""
+    profile = get_or_create_profile(db, user)
+    p_data = ProfileData.model_validate(profile.data_json or {})
+    p_data.contacts.photo_url = photo_data_uri
+    profile.data_json = p_data.model_dump()
+
+    resume = db.query(Resume).filter(Resume.user_id == user.id).first()
+    if resume:
+        r_data = ProfileData.model_validate(resume.data_json or {})
+        r_data.contacts.photo_url = photo_data_uri
+        resume.data_json = r_data.model_dump()
+
     db.commit()
     db.refresh(profile)
     return profile

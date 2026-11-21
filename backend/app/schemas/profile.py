@@ -8,6 +8,7 @@ from pydantic import BaseModel, EmailStr, Field, field_validator, model_validato
 
 PHONE_RE = re.compile(r"^\+?[0-9\s\-()]{7,20}$")
 DATE_RE = re.compile(r"^\d{4}-(0[1-9]|1[0-2])(-\d{2})?$")
+SAFE_PHOTO_DATA_URI_RE = re.compile(r"^data:image/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$")
 
 
 def _parse_sortable_date(value: Optional[str]) -> Optional[str]:
@@ -28,6 +29,17 @@ class ContactInfo(BaseModel):
     email: Optional[EmailStr | str] = ""
     phone: str = Field(default="", max_length=30)
     location: str = Field(default="", max_length=120)
+    photo_url: str = Field(default="", max_length=700_000)
+
+    @field_validator("photo_url")
+    @classmethod
+    def validate_photo_url(cls, v: str) -> str:
+        val = (v or "").strip()
+        if not val:
+            return ""
+        if not SAFE_PHOTO_DATA_URI_RE.match(val):
+            raise ValueError("Недопустимий формат фото (дозволені лише JPG, PNG або WebP)")
+        return val
 
     @field_validator("email")
     @classmethod

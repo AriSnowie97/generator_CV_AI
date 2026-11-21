@@ -75,3 +75,60 @@ def test_profile_completeness_updates(client):
     assert resp.status_code == 200
     assert resp.json()["completeness_score"] == 100
     assert resp.json()["missing_blocks"] == []
+
+
+def test_profile_photo_upload_syncs_to_resume_and_deletes(client):
+    import io
+    from PIL import Image
+
+    headers = register_and_auth(client, email="photo@example.com")["headers"]
+
+    # Reject non-image files
+    bad = client.post(
+        "/api/profile/photo",
+        files={"file": ("malware.txt", b"not an image", "text/plain")},
+        headers=headers,
+    )
+    assert bad.status_code == 400
+
+    # Upload real PNG -> resized JPEG data URI synced to both profile and resume
+    img = Image.new("RGB", (400, 300), color=(37, 99, 235))
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    ok = client.post(
+        "/api/profile/photo",
+        files={"file": ("avatar.png", buf.getvalue(), "image/png")},
+        headers=headers,
+    )
+    assert ok.status_code == 200, ok.text
+    photo_uri = ok.json()["data"]["contacts"]["photo_url"]
+    assert photo_uri.startswith("data:image/jpeg;base64,")
+
+    # Verify photo synced automatically to /api/resume
+    res = client.get("/api/resume", headers=headers)
+    assert res.status_code == 200
+    assert res.json()["data"]["contacts"]["photo_url"] == photo_uri
+
+    # Verify preview HTML includes <img>
+    prev = client.post(
+        "/api/resume/preview-html",
+        json={"template_id": "minimal", "language": "uk", "data": res.json()["data"]},
+    )
+    assert prev.status_code == 200
+    assert '<img class="cv-photo"' in prev.text
+
+    # Verify DOCX export succeeds with embedded photo
+    docx_resp = client.post(
+        "/api/export",
+        json={"format": "docx", "template_id": "it", "language": "uk", "data": res.json()["data"]},
+        headers=headers,
+    )
+    assert docx_resp.status_code == 200
+    assert len(docx_resp.content) > 10000
+
+    # Delete photo -> clears both profile and resume
+    rem = client.delete("/api/profile/photo", headers=headers)
+    assert rem.status_code == 200
+    assert rem.json()["data"]["contacts"]["photo_url"] == ""
+    res_after = client.get("/api/resume", headers=headers)
+    assert res_after.json()["data"]["contacts"]["photo_url"] == ""

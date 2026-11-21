@@ -1,5 +1,6 @@
 """PDF (Headless Chromium) and DOCX resume export service."""
 
+import base64
 import io
 import os
 import shutil
@@ -125,6 +126,16 @@ def generate_docx_bytes(
     normal_style.font.size = Pt(10.5)
 
     accent_rgb = RGBColor(0x25, 0x63, 0xEB) if template_id == "it" else RGBColor(0x18, 0x18, 0x1B)
+
+    photo_uri = (data.contacts.photo_url or "").strip()
+    if photo_uri.startswith("data:image/") and ";base64," in photo_uri:
+        try:
+            raw_img = base64.b64decode(photo_uri.split(";base64,", 1)[1])
+            pic_p = doc.add_paragraph()
+            pic_p.paragraph_format.space_after = Pt(6)
+            pic_p.add_run().add_picture(io.BytesIO(raw_img), width=Inches(1.05))
+        except Exception:
+            pass
 
     title_p = doc.add_paragraph()
     title_run = title_p.add_run(_display_name(data))
