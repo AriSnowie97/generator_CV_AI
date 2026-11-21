@@ -70,6 +70,19 @@ GLOSSARY_UK_TO_EN: dict[str, str] = {
     "середній": "Intermediate",
     "вище середнього": "Upper-Intermediate",
     "початковий": "Beginner",
+    "командна робота": "Teamwork",
+    "комунікація": "Communication",
+    "комунікабельність": "Communication",
+    "критичне мислення": "Critical thinking",
+    "тайм-менеджмент": "Time management",
+    "адаптивність": "Adaptability",
+    "вирішення проблем": "Problem solving",
+    "лідерство": "Leadership",
+    "відповідальність": "Responsibility",
+    "швидке навчання": "Fast learner",
+    "увага до деталей": "Attention to detail",
+    "стресостійкість": "Stress resistance",
+    "аналітичне мислення": "Analytical thinking",
 }
 
 GLOSSARY_EN_TO_UK: dict[str, str] = {v.lower(): k.capitalize() for k, v in GLOSSARY_UK_TO_EN.items()}
@@ -302,6 +315,10 @@ async def translate_resume_data(req: TranslateResumeRequest) -> TranslateResumeR
         if dst == "en" and CYRILLIC_RE.search(skill):
             fields_to_translate[f"skill_{si}"] = skill
 
+    for ssi, sskill in enumerate(data.soft_skills):
+        if _needs_translation(sskill, dst):
+            fields_to_translate[f"soft_skill_{ssi}"] = sskill
+
     for li, lang in enumerate(data.languages):
         if _needs_translation(lang.name, dst):
             fields_to_translate[f"lang_{li}_name"] = lang.name
@@ -367,6 +384,10 @@ async def translate_resume_data(req: TranslateResumeRequest) -> TranslateResumeR
     for si in range(len(data.skills)):
         if f"skill_{si}" in results:
             data.skills[si] = results[f"skill_{si}"]
+
+    for ssi in range(len(data.soft_skills)):
+        if f"soft_skill_{ssi}" in results:
+            data.soft_skills[ssi] = results[f"soft_skill_{ssi}"]
 
     for li, lang in enumerate(data.languages):
         if f"lang_{li}_name" in results:

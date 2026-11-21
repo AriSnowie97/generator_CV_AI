@@ -147,21 +147,45 @@ def _render_section(
         """
 
     if block_key == "skills":
-        clean_skills = [s.strip() for s in data.skills if s.strip()]
-        if not clean_skills:
+        hard = [s.strip() for s in data.skills if s.strip()]
+        soft = [s.strip() for s in data.soft_skills if s.strip()]
+        if not hard and not soft:
             return ""
-        if template_id == "it":
-            chips = "".join(
-                f"<span class='skill-tag'>{_e(s)}</span>{'' if i == len(clean_skills) - 1 else '<span class=\"ats-sep\">, </span>'}"
-                for i, s in enumerate(clean_skills)
+
+        def _render_skill_group(items: list[str], is_soft: bool = False) -> str:
+            if template_id == "it":
+                cls = "skill-tag soft" if is_soft else "skill-tag"
+                chips = "".join(
+                    f"<span class='{cls}'>{_e(s)}</span>{'' if i == len(items) - 1 else '<span class=\"ats-sep\">, </span>'}"
+                    for i, s in enumerate(items)
+                )
+                return f"<div class='skills-list'>{chips}</div>"
+            return f"<span class='skills-plain'>{_e(', '.join(items))}</span>"
+
+        blocks: list[str] = []
+        if hard and soft:
+            if template_id == "it":
+                blocks.append(f"<div class='skill-group'><div class='skill-group-label'>Hard Skills</div>{_render_skill_group(hard, False)}</div>")
+                blocks.append(f"<div class='skill-group'><div class='skill-group-label'>Soft Skills</div>{_render_skill_group(soft, True)}</div>")
+            else:
+                blocks.append(f"<p class='skills-plain'><strong>Hard Skills:</strong> {_e(', '.join(hard))}</p>")
+                blocks.append(f"<p class='skills-plain'><strong>Soft Skills:</strong> {_e(', '.join(soft))}</p>")
+        elif hard:
+            blocks.append(
+                _render_skill_group(hard, False)
+                if template_id == "it"
+                else f"<p class='skills-plain'>{_e(', '.join(hard))}</p>"
             )
-            inner = f"<div class='skills-list'>{chips}</div>"
         else:
-            inner = f"<p class='skills-plain'>{_e(', '.join(clean_skills))}</p>"
+            if template_id == "it":
+                blocks.append(f"<div class='skill-group'><div class='skill-group-label'>Soft Skills</div>{_render_skill_group(soft, True)}</div>")
+            else:
+                blocks.append(f"<p class='skills-plain'><strong>Soft Skills:</strong> {_e(', '.join(soft))}</p>")
+
         return f"""
         <section class="cv-section">
             <h2>{_e(labels['skills'])}</h2>
-            {inner}
+            {''.join(blocks)}
         </section>
         """
 
@@ -266,6 +290,9 @@ def _template_css(template_id: Literal["minimal", "classic", "it"]) -> str:
     .muted { color: #4b5563; font-size: 9.4pt; }
     .skills-plain { color: #1f2937; line-height: 1.55; }
     .skills-list { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .skill-group { margin-bottom: 7px; }
+    .skill-group:last-child { margin-bottom: 0; }
+    .skill-group-label { font-size: 8.6pt; font-weight: 700; color: #4b5563; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
     .ats-sep { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
     .inline-meta { font-size: 9.6pt; color: #1f2937; }
     .links-list { list-style: none; margin: 0; padding: 0; font-size: 9.4pt; }
@@ -308,6 +335,11 @@ def _template_css(template_id: Literal["minimal", "classic", "it"]) -> str:
             padding: 2px 8px;
             font-size: 8.8pt;
             font-weight: 500;
+        }
+        .skill-tag.soft {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+            color: #374151;
         }
         .link-url { color: #1d4ed8; }
         """

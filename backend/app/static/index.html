@@ -506,6 +506,18 @@
     }
     .chip.green { background: var(--ok-bg); border-color: var(--ok-border); color: var(--ok); }
     .chip.amber { background: var(--warn-bg); border-color: var(--warn-border); color: var(--warn); }
+    .chip.soft { background: var(--brand-soft); border-color: var(--brand-border); color: var(--brand); }
+    .chip-suggest {
+      border: 1px dashed var(--border-strong);
+      background: transparent;
+      color: var(--muted);
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .chip-suggest:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-soft); }
     .chip-remove {
       border: none;
       background: transparent;
@@ -1063,15 +1075,32 @@
 
         <!-- Skills, Languages, Links -->
         <div class="card" style="margin-bottom:16px;">
-          <h3 style="margin:0 0 12px; font-size:15.5px;">6. Навички, мови та посилання</h3>
-          <label class="field-label">Ключові навички (додайте через Enter або кому, до 30)</label>
+          <h3 style="margin:0 0 12px; font-size:15.5px;">6. Навички (Hard &amp; Soft Skills), мови та посилання</h3>
+          <label class="field-label">Hard Skills — технічні та професійні навички (через Enter або кому, до 30)</label>
           <div style="display:flex; gap:8px;">
-            <input id="f-skill-input" placeholder="Наприклад: Python, FastAPI, SQL, Docker" onkeydown="if(event.key==='Enter'){event.preventDefault(); addSkillFromInput();}" />
+            <input id="f-skill-input" placeholder="Наприклад: Python, FastAPI, SQL, Docker, Prompt Engineering" onkeydown="if(event.key==='Enter'){event.preventDefault(); addSkillFromInput();}" />
             <button class="small primary" type="button" onclick="addSkillFromInput()">Додати</button>
           </div>
           <div id="skills-chips" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;"></div>
 
-          <div class="field-grid" style="margin-top:16px;">
+          <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">
+            <label class="field-label">Soft Skills — гнучкі та комунікативні навички (через Enter або кому, до 15)</label>
+            <div style="display:flex; gap:8px;">
+              <input id="f-soft-skill-input" placeholder="Наприклад: Командна робота, Критичне мислення, Комунікація" onkeydown="if(event.key==='Enter'){event.preventDefault(); addSoftSkillFromInput();}" />
+              <button class="small primary" type="button" onclick="addSoftSkillFromInput()">Додати</button>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;">
+              <button type="button" class="chip-suggest" onclick="addQuickSoftSkill('Командна робота')">+ Командна робота</button>
+              <button type="button" class="chip-suggest" onclick="addQuickSoftSkill('Комунікація')">+ Комунікація</button>
+              <button type="button" class="chip-suggest" onclick="addQuickSoftSkill('Критичне мислення')">+ Критичне мислення</button>
+              <button type="button" class="chip-suggest" onclick="addQuickSoftSkill('Тайм-менеджмент')">+ Тайм-менеджмент</button>
+              <button type="button" class="chip-suggest" onclick="addQuickSoftSkill('Адаптивність')">+ Адаптивність</button>
+              <button type="button" class="chip-suggest" onclick="addQuickSoftSkill('Вирішення проблем')">+ Вирішення проблем</button>
+            </div>
+            <div id="soft-skills-chips" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;"></div>
+          </div>
+
+          <div class="field-grid" style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border);">
             <div>
               <label class="field-label">Мови (формат: Мова — Рівень; через «;»)</label>
               <input id="f-langs" placeholder="Українська — Рідна; Англійська — B2" oninput="updateLanguages(this.value)" />
@@ -1227,6 +1256,7 @@
         },
       ],
       skills: ["Python", "FastAPI", "TypeScript", "Next.js", "PostgreSQL", "Docker", "Git"],
+      soft_skills: ["Командна робота", "Критичне мислення", "Комунікація", "Тайм-менеджмент"],
       languages: [{ name: "Українська", level: "Рідна" }, { name: "Англійська", level: "B2 (Upper-Intermediate)" }],
       links: [{ label: "GitHub", url: "https://github.com/AriSnowie97/generator_CV_AI" }],
     };
@@ -1554,6 +1584,7 @@
 
       renderPhotoPreviews();
       renderSkillsChips();
+      renderSoftSkillsChips();
       renderBlockOrder();
       renderExperiences();
       renderEducation();
@@ -1683,6 +1714,46 @@
     function removeSkill(idx) {
       state.data.skills.splice(idx, 1);
       renderSkillsChips();
+      onDataMutated();
+    }
+
+    function renderSoftSkillsChips() {
+      const host = document.getElementById("soft-skills-chips");
+      if (!host) return;
+      host.innerHTML = (state.data.soft_skills || [])
+        .map((s, i) => `<span class="chip soft">${esc(s)}<button class="chip-remove" type="button" onclick="removeSoftSkill(${i})">×</button></span>`)
+        .join("");
+    }
+
+    function addSoftSkillFromInput() {
+      const inp = document.getElementById("f-soft-skill-input");
+      const raw = inp.value.trim();
+      if (!raw) return;
+      const parts = raw.split(",").map((x) => x.trim()).filter(Boolean);
+      const merged = [...(state.data.soft_skills || [])];
+      for (const p of parts) {
+        if (merged.length < 15 && !merged.includes(p)) merged.push(p);
+      }
+      state.data.soft_skills = merged;
+      inp.value = "";
+      renderSoftSkillsChips();
+      onDataMutated();
+    }
+
+    function addQuickSoftSkill(label) {
+      const merged = [...(state.data.soft_skills || [])];
+      if (merged.length >= 15) { showAlert("Максимум 15 Soft Skills."); return; }
+      if (!merged.includes(label)) {
+        merged.push(label);
+        state.data.soft_skills = merged;
+        renderSoftSkillsChips();
+        onDataMutated();
+      }
+    }
+
+    function removeSoftSkill(idx) {
+      (state.data.soft_skills || []).splice(idx, 1);
+      renderSoftSkillsChips();
       onDataMutated();
     }
 

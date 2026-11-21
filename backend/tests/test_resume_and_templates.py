@@ -19,6 +19,7 @@ def test_template_switching_and_block_order_persistence(client):
             }
         ],
         "skills": ["React", "TypeScript", "Next.js"],
+        "soft_skills": ["Командна робота", "Критичне мислення"],
     }
 
     save_resp = client.put(
@@ -56,6 +57,7 @@ def test_template_switching_and_block_order_persistence(client):
     assert loaded["block_order"] == custom_order
     assert loaded["data"]["target_role"] == "Frontend Developer"
     assert loaded["data"]["skills"] == ["React", "TypeScript", "Next.js"]
+    assert loaded["data"]["soft_skills"] == ["Командна робота", "Критичне мислення"]
     assert loaded["data"]["courses"][0]["title"] == "Prompt Engineering"
 
     prev = client.post(
@@ -65,6 +67,9 @@ def test_template_switching_and_block_order_persistence(client):
     assert prev.status_code == 200
     assert "Курси та сертифікати" in prev.text
     assert "Prompt Engineering" in prev.text
+    assert "Hard Skills" in prev.text
+    assert "Soft Skills" in prev.text
+    assert "Командна робота" in prev.text
 
 
 def test_guest_preview_escapes_xss_and_supports_all_templates(client):
@@ -185,6 +190,7 @@ def test_resume_auto_translation_uk_to_en_and_pii_safety(client):
                 }
             ],
             "skills": ["Python", "FastAPI", "Docker"],
+            "soft_skills": ["Командна робота", "Тайм-менеджмент"],
             "languages": [{"name": "Українська", "level": "Рідна"}],
         },
     }
@@ -200,5 +206,6 @@ def test_resume_auto_translation_uk_to_en_and_pii_safety(client):
     assert out["desired_salary"] == "from $800"
     assert out["education"][0]["degree"] == "Bachelor's Degree"
     assert out["skills"] == ["Python", "FastAPI", "Docker"]
+    assert out["soft_skills"] == ["Teamwork", "Time management"]
     assert out["languages"][0]["name"] == "Ukrainian"
     assert out["languages"][0]["level"] == "Native"

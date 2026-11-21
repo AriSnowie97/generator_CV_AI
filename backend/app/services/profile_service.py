@@ -21,7 +21,7 @@ def calculate_completeness(data: ProfileData) -> tuple[int, list[str]]:
         ("summary", bool(data.summary.strip()), 15),
         ("experience", len(data.experiences) > 0, 20),
         ("education", len(data.education) > 0, 10),
-        ("skills", len(data.skills) > 0, 10),
+        ("skills", (len(data.skills) + len(data.soft_skills)) > 0, 10),
         ("languages", len(data.languages) > 0, 5),
         ("links", len(data.links) > 0, 5),
     ]

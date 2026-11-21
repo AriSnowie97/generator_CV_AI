@@ -134,6 +134,7 @@ class ProfileData(BaseModel):
     education: list[EducationItem] = Field(default_factory=list)
     courses: list[CourseItem] = Field(default_factory=list, max_length=20)
     skills: list[str] = Field(default_factory=list)
+    soft_skills: list[str] = Field(default_factory=list)
     languages: list[LanguageItem] = Field(default_factory=list)
     links: list[LinkItem] = Field(default_factory=list)
 
@@ -150,6 +151,14 @@ class ProfileData(BaseModel):
         cleaned = [s.strip() for s in v if s and s.strip()]
         if len(cleaned) > 30:
             raise ValueError("Максимум 30 навичок")
+        return cleaned
+
+    @field_validator("soft_skills")
+    @classmethod
+    def check_max_soft_skills(cls, v: list[str]) -> list[str]:
+        cleaned = [s.strip() for s in v if s and s.strip()]
+        if len(cleaned) > 15:
+            raise ValueError("Максимум 15 soft skills")
         return cleaned
 
 

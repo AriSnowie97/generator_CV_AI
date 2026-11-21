@@ -54,6 +54,7 @@ def _extract_resume_corpus(data: ProfileData) -> str:
         data.target_role,
         data.summary,
         " ".join(data.skills),
+        " ".join(data.soft_skills),
         " ".join(f"{l.name} {l.level}" for l in data.languages),
     ]
     for exp in data.experiences:
@@ -108,8 +109,8 @@ def analyze_ats(req: ATSCheckRequest) -> ATSCheckResponse:
 
     has_metrics = any(METRIC_RE.search(b) or any(ch.isdigit() for ch in b) for b in all_bullets)
 
-    skills_count = len([s for s in data.skills if s.strip()])
-    skills_ok = 5 <= skills_count <= 30
+    skills_count = len([s for s in data.skills if s.strip()]) + len([s for s in data.soft_skills if s.strip()])
+    skills_ok = 5 <= skills_count <= 45
 
     filled_core_sections = sum(
         [

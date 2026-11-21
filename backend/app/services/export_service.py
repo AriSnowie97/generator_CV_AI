@@ -227,9 +227,24 @@ def generate_docx_bytes(
                     if c.certificate_url.strip():
                         p.add_run(f"\n{c.certificate_url.strip()}")
 
-        elif block == "skills" and data.skills:
-            _add_heading(labels["skills"])
-            doc.add_paragraph(", ".join(s for s in data.skills if s.strip()))
+        elif block == "skills" and (data.skills or data.soft_skills):
+            hard = [s.strip() for s in data.skills if s.strip()]
+            soft = [s.strip() for s in data.soft_skills if s.strip()]
+            if hard or soft:
+                _add_heading(labels["skills"])
+                if hard and soft:
+                    p1 = doc.add_paragraph()
+                    p1.add_run("Hard Skills: ").bold = True
+                    p1.add_run(", ".join(hard))
+                    p2 = doc.add_paragraph()
+                    p2.add_run("Soft Skills: ").bold = True
+                    p2.add_run(", ".join(soft))
+                elif hard:
+                    doc.add_paragraph(", ".join(hard))
+                else:
+                    p2 = doc.add_paragraph()
+                    p2.add_run("Soft Skills: ").bold = True
+                    p2.add_run(", ".join(soft))
 
         elif block == "languages" and data.languages:
             items = [f"{l.name}{' — ' + l.level if l.level else ''}" for l in data.languages if l.name.strip()]
