@@ -517,17 +517,49 @@
     footer a { color: var(--muted); text-decoration: none; }
     footer a:hover { color: var(--brand); text-decoration: underline; }
 
+    /* Editor Toolbar Layout */
+    .editor-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px 14px;
+      padding: 14px 18px;
+      margin-bottom: 16px;
+    }
+    .editor-toolbar-left {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+    .editor-lang-row,
+    .editor-status-row,
+    .editor-actions-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .ats-btn-clean {
+      border: none !important;
+      background: transparent !important;
+      padding: 0 !important;
+      box-shadow: none !important;
+    }
+
     /* Mobile Editor Switcher & Responsive Polish */
     .editor-right-col { position: sticky; top: 82px; }
     .mobile-editor-tabs {
       display: none;
       position: sticky;
-      top: 66px;
-      z-index: 30;
+      top: 0;
+      z-index: 35;
       background: rgba(248, 250, 252, 0.96);
-      backdrop-filter: blur(8px);
-      padding: 8px 0 12px;
-      margin-bottom: 6px;
+      backdrop-filter: blur(10px);
+      padding: 8px 0 10px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--border);
     }
     .mobile-editor-tabs .segmented {
       display: grid;
@@ -535,7 +567,7 @@
       width: 100%;
     }
     .mobile-editor-tabs .segmented button {
-      padding: 9px 6px;
+      padding: 10px 6px;
       font-size: 13px;
     }
 
@@ -547,16 +579,88 @@
 
     @media (max-width: 640px) {
       html, body { overflow-x: hidden; }
-      .nav-wrap { padding: 10px 14px; }
-      .nav-actions { gap: 6px; }
-      .nav-actions button { padding: 6px 10px; font-size: 12.5px; }
+      header { position: relative; }
+      .nav-wrap { padding: 10px 14px; gap: 10px; }
+      .nav-actions {
+        width: 100%;
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 6px;
+      }
+      .nav-actions button {
+        flex: 1 1 0;
+        padding: 8px 6px;
+        font-size: 12px;
+        white-space: nowrap;
+      }
       .logo { font-size: 17px; gap: 8px; }
       .logo-mark { width: 30px; height: 30px; }
-      .container { padding: 14px; }
-      .card { padding: 15px; }
+      .container { padding: 12px; }
+      .card { padding: 14px; }
       .showcase-shell { padding: 10px; border-radius: 14px; }
-      .segmented { flex-wrap: wrap; max-width: 100%; }
-      .segmented button { padding: 6px 9px; font-size: 12px; }
+
+      /* Clean symmetrical full-width button rows in mobile editor toolbar */
+      .editor-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 12px;
+      }
+      .editor-toolbar-left {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        width: 100%;
+      }
+      .editor-tpl-seg {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr);
+        width: 100%;
+      }
+      .editor-tpl-seg button {
+        padding: 8px 4px;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      .editor-lang-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        width: 100%;
+      }
+      .editor-lang-row select,
+      .editor-lang-row button {
+        width: 100% !important;
+        min-height: 38px;
+        font-size: 12.5px;
+      }
+      #btn-undo-translate {
+        grid-column: 1 / -1;
+      }
+      .editor-status-row {
+        justify-content: space-between;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 7px 10px;
+        width: 100%;
+      }
+      .editor-actions-row {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 8px;
+        width: 100%;
+      }
+      .editor-actions-row button {
+        flex: 1 1 0;
+        min-height: 40px;
+        font-size: 13px;
+        padding: 8px 6px;
+      }
+      .editor-actions-row button.hidden {
+        display: none;
+      }
+
       .hero-cta button { width: 100%; }
       .ai-variant { flex-direction: column; align-items: stretch; }
       .preview-frame { min-height: 520px; }
@@ -711,30 +815,34 @@
     </div>
 
     <!-- Top Editor Toolbar -->
-    <div class="card toolbar" style="padding:14px 18px;">
-      <div class="toolbar-group">
-        <div class="segmented">
-          <button class="active" id="tpl-btn-minimal" onclick="setTemplate('minimal')">Мінімальний ATS</button>
+    <div class="card editor-toolbar">
+      <div class="editor-toolbar-left">
+        <div class="segmented editor-tpl-seg">
+          <button class="active" id="tpl-btn-minimal" onclick="setTemplate('minimal')">Мінімальний</button>
           <button id="tpl-btn-classic" onclick="setTemplate('classic')">Класичний</button>
           <button id="tpl-btn-it" onclick="setTemplate('it')">IT / Tech</button>
         </div>
-        <select id="resume-lang" style="width:auto; font-size:12.5px; padding:6px 10px;" onchange="onLangChange(this.value)">
-          <option value="uk">Мова: Українська</option>
-          <option value="en">Мова: English</option>
-        </select>
-        <button class="small soft-brand" id="btn-auto-translate" onclick="translateCurrentResume(state.language === 'uk' ? 'en' : 'uk', state.language)" title="Автоматично перекласти вміст резюме">
-          🌐 Автопереклад
-        </button>
-        <button class="small hidden" id="btn-undo-translate" onclick="undoTranslation()" title="Повернути текст до перекладу">
-          ↩ Оригінал
-        </button>
-        <button class="small" id="ats-score-btn" onclick="setRightTab('ats')" title="Відкрити ATS-перевірку">
-          <span id="ats-score-pill" class="ats-pill" style="padding:2px 8px; border:none;">ATS: —</span>
-        </button>
-        <span id="quota-badge" class="chip hidden">AI: 10/10</span>
-        <span id="save-badge" style="font-size:12px; font-weight:600; color:var(--ok);"></span>
+        <div class="editor-lang-row">
+          <select id="resume-lang" style="width:auto; font-size:12.5px; padding:6px 10px;" onchange="onLangChange(this.value)">
+            <option value="uk">Мова: Українська</option>
+            <option value="en">Мова: English</option>
+          </select>
+          <button class="small soft-brand" id="btn-auto-translate" onclick="translateCurrentResume(state.language === 'uk' ? 'en' : 'uk', state.language)" title="Автоматично перекласти вміст резюме">
+            🌐 Автопереклад
+          </button>
+          <button class="small hidden" id="btn-undo-translate" onclick="undoTranslation()" title="Повернути текст до перекладу">
+            ↩ Повернути оригінал
+          </button>
+        </div>
+        <div class="editor-status-row">
+          <button class="ats-btn-clean" id="ats-score-btn" onclick="setRightTab('ats')" title="Відкрити ATS-перевірку">
+            <span id="ats-score-pill" class="ats-pill">ATS: —</span>
+          </button>
+          <span id="quota-badge" class="chip hidden">AI: 10/10</span>
+          <span id="save-badge" style="font-size:12px; font-weight:600; color:var(--ok);"></span>
+        </div>
       </div>
-      <div class="toolbar-group">
+      <div class="editor-actions-row">
         <button class="small" id="btn-save-resume" onclick="saveResume()">Зберегти</button>
         <button class="small primary" onclick="exportFile('pdf')">⬇ PDF</button>
         <button class="small soft-brand" onclick="exportFile('docx')">⬇ DOCX</button>
