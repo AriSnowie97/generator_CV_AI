@@ -17,8 +17,15 @@ def _parse_sortable_date(value: Optional[str]) -> Optional[str]:
     val = value.strip()
     if not val:
         return None
+    # Accept MM.YYYY or MM/YYYY and normalize to YYYY-MM
+    m_dmy = re.match(r"^(0[1-9]|1[0-2])[./](\d{4})$", val)
+    if m_dmy:
+        return f"{m_dmy.group(2)}-{m_dmy.group(1)}"
+    # Accept plain YYYY
+    if re.match(r"^\d{4}$", val):
+        return f"{val}-01"
     if not DATE_RE.match(val):
-        raise ValueError("Формат дати має бути РРРР-ММ або РРРР-ММ-ДД")
+        raise ValueError("Формат дати має бути РРРР-ММ (оберіть місяць і рік зі списку)")
     return val[:7]
 
 

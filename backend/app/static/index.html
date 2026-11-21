@@ -1687,6 +1687,46 @@
       scheduleAutosave();
     }
 
+    const MONTHS_UK = [
+      ["01", "Січень"], ["02", "Лютий"], ["03", "Березень"], ["04", "Квітень"],
+      ["05", "Травень"], ["06", "Червень"], ["07", "Липень"], ["08", "Серпень"],
+      ["09", "Вересень"], ["10", "Жовтень"], ["11", "Листопад"], ["12", "Грудень"],
+    ];
+
+    function renderMonthYearPicker(listKey, idx, field, value, disabled) {
+      const m = /^(\d{4})-(\d{2})/.exec(value || "");
+      const curYear = m ? m[1] : "";
+      const curMonth = m ? m[2] : "";
+      const thisYear = new Date().getFullYear() + 2;
+      let yearOpts = `<option value="">Рік</option>`;
+      for (let y = thisYear; y >= 1980; y--) {
+        yearOpts += `<option value="${y}" ${String(y) === curYear ? "selected" : ""}>${y}</option>`;
+      }
+      const monthOpts =
+        `<option value="">Місяць</option>` +
+        MONTHS_UK.map(([num, label]) => `<option value="${num}" ${num === curMonth ? "selected" : ""}>${label}</option>`).join("");
+      const disAttr = disabled ? "disabled" : "";
+      return `
+        <div style="display:grid; grid-template-columns:1.25fr 0.95fr; gap:6px;">
+          <select ${disAttr} onchange="updateMonthYearPart('${listKey}', ${idx}, '${field}', 'month', this.value)">${monthOpts}</select>
+          <select ${disAttr} onchange="updateMonthYearPart('${listKey}', ${idx}, '${field}', 'year', this.value)">${yearOpts}</select>
+        </div>
+      `;
+    }
+
+    function updateMonthYearPart(listKey, idx, field, part, val) {
+      const item = state.data[listKey][idx];
+      const existing = /^(\d{4})-(\d{2})/.exec(item[field] || "");
+      let year = existing ? existing[1] : "";
+      let month = existing ? existing[2] : "";
+      if (part === "year") year = val;
+      if (part === "month") month = val;
+      if (year && !month) month = "01";
+      if (!year && month) year = String(new Date().getFullYear());
+      item[field] = year && month ? `${year}-${month}` : "";
+      onDataMutated();
+    }
+
     function renderExperiences() {
       const host = document.getElementById("exp-list");
       if (!state.data.experiences.length) {
@@ -1703,8 +1743,8 @@
             <div class="field-grid">
               <div><label class="field-label">Посада</label><input placeholder="Junior Developer" value="${esc(exp.position)}" oninput="state.data.experiences[${ei}].position=this.value; onDataMutated()" /></div>
               <div><label class="field-label">Компанія / Проєкт</label><input placeholder="DUICT Lab" value="${esc(exp.company)}" oninput="state.data.experiences[${ei}].company=this.value; onDataMutated()" /></div>
-              <div><label class="field-label">Початок</label><input type="month" value="${esc(exp.start_date)}" oninput="state.data.experiences[${ei}].start_date=this.value; onDataMutated()" /></div>
-              <div><label class="field-label">Завершення</label><input type="month" value="${esc(exp.end_date)}" ${exp.is_current ? "disabled" : ""} oninput="state.data.experiences[${ei}].end_date=this.value; onDataMutated()" /></div>
+              <div><label class="field-label">Початок</label>${renderMonthYearPicker("experiences", ei, "start_date", exp.start_date, false)}</div>
+              <div><label class="field-label">Завершення</label>${renderMonthYearPicker("experiences", ei, "end_date", exp.end_date, exp.is_current)}</div>
             </div>
             <label style="font-size:12.5px; display:inline-flex; gap:6px; align-items:center; margin-top:8px; color:var(--text-2); cursor:pointer;">
               <input type="checkbox" style="width:auto;" ${exp.is_current ? "checked" : ""} onchange="state.data.experiences[${ei}].is_current=this.checked; if(this.checked) state.data.experiences[${ei}].end_date=''; renderExperiences(); onDataMutated()" />
@@ -1742,7 +1782,13 @@
               <div class="field-full"><label class="field-label">Навчальний заклад</label><input placeholder="Назва університету" value="${esc(edu.institution)}" oninput="state.data.education[${idx}].institution=this.value; onDataMutated()" /></div>
               <div><label class="field-label">Ступінь</label><input placeholder="Бакалавр" value="${esc(edu.degree)}" oninput="state.data.education[${idx}].degree=this.value; onDataMutated()" /></div>
               <div><label class="field-label">Спеціальність</label><input placeholder="Інформаційні технології" value="${esc(edu.field_of_study)}" oninput="state.data.education[${idx}].field_of_study=this.value; onDataMutated()" /></div>
+              <div><label class="field-label">Початок</label>${renderMonthYearPicker("education", idx, "start_date", edu.start_date, false)}</div>
+              <div><label class="field-label">Завершення</label>${renderMonthYearPicker("education", idx, "end_date", edu.end_date, edu.is_current)}</div>
             </div>
+            <label style="font-size:12.5px; display:inline-flex; gap:6px; align-items:center; margin-top:8px; color:var(--text-2); cursor:pointer;">
+              <input type="checkbox" style="width:auto;" ${edu.is_current ? "checked" : ""} onchange="state.data.education[${idx}].is_current=this.checked; if(this.checked) state.data.education[${idx}].end_date=''; renderEducation(); onDataMutated()" />
+              Навчаюсь зараз
+            </label>
           </div>
         `)
         .join("");
@@ -1872,19 +1918,33 @@
     function schedulePreview() {
       if (state.previewTimer) clearTimeout(state.previewTimer);
       state.previewTimer = setTimeout(async () => {
-        const resp = await fetch("/api/resume/preview-html", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            template_id: state.templateId,
-            language: state.language,
-            block_order: state.blockOrder,
-            data: state.data,
-          }),
-        });
-        const iframe = document.getElementById("editor-preview");
-        iframe.onload = () => autoSizeIframe(iframe);
-        iframe.srcdoc = await resp.text();
+        try {
+          const resp = await fetch("/api/resume/preview-html", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              template_id: state.templateId,
+              language: state.language,
+              block_order: state.blockOrder,
+              data: state.data,
+            }),
+          });
+          if (!resp.ok) {
+            let msg = "Перевірте коректність заповнених полів (дати, email або телефон).";
+            try {
+              const errJson = await resp.json();
+              if (typeof errJson.detail === "string") msg = errJson.detail;
+              else if (Array.isArray(errJson.detail) && errJson.detail[0]?.msg) {
+                msg = errJson.detail[0].msg.replace(/^Value error,\s*/i, "");
+              }
+            } catch {}
+            showAlert(msg, "warn");
+            return;
+          }
+          const iframe = document.getElementById("editor-preview");
+          iframe.onload = () => autoSizeIframe(iframe);
+          iframe.srcdoc = await resp.text();
+        } catch {}
       }, 220);
     }
 
