@@ -31,7 +31,9 @@ class GoogleAuthRequest(BaseModel):
 
 
 class VerifyEmailRequest(BaseModel):
-    token: str = Field(min_length=8, max_length=256)
+    token: Optional[str] = Field(default=None, min_length=8, max_length=256)
+    code: Optional[str] = Field(default=None, min_length=6, max_length=6)
+    email: Optional[EmailStr] = None
 
 
 class UserResponse(BaseModel):
@@ -49,6 +51,15 @@ class AuthResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+    verification_token_preview: Optional[str] = None
+    email_sent: bool = False
+    email_delivery_mode: str = "dev"
+
+
+class ResendVerificationResponse(BaseModel):
+    email_sent: bool
+    email_delivery_mode: str
+    message: str
     verification_token_preview: Optional[str] = None
 
 

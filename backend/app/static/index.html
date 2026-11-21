@@ -916,9 +916,19 @@
         </label>
         <button class="primary lg" id="auth-submit-btn" onclick="submitAuth()" style="width:100%;">Увійти</button>
       </div>
-      <div id="verify-box" class="notice ok hidden" style="margin-top:16px; margin-bottom:0;">
-        <div><strong>Акаунт створено!</strong> Підтвердіть email в один клік:</div>
-        <button class="small primary" onclick="verifyNow()">Підтвердити email</button>
+      <div id="verify-box" class="notice ok hidden" style="margin-top:16px; margin-bottom:0; flex-direction:column; align-items:stretch; gap:10px;">
+        <div id="verify-box-text"><strong>Акаунт створено!</strong></div>
+        <div id="verify-code-row" style="display:flex; gap:8px; flex-wrap:wrap;">
+          <input id="verify-code-input" inputmode="numeric" maxlength="6" placeholder="6-значний код із листа" style="flex:1 1 150px; text-align:center; letter-spacing:4px; font-weight:700;" onkeydown="if(event.key==='Enter'){event.preventDefault(); verifyByCode('verify-code-input');}" />
+          <button class="small primary" type="button" onclick="verifyByCode('verify-code-input')">Підтвердити код</button>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:space-between; align-items:center;">
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="small" type="button" id="btn-resend-verify" onclick="resendVerifyEmail()">Надіслати лист ще раз</button>
+            <button class="small soft-brand hidden" type="button" id="btn-dev-verify" onclick="verifyNow()">Тестове підтвердження (dev)</button>
+          </div>
+          <button class="small ghost" type="button" onclick="state.demoMode=false; navigate('editor')">Перейти в редактор →</button>
+        </div>
       </div>
     </div>
   </section>
@@ -1180,7 +1190,16 @@
   <section id="view-settings" class="container hidden" style="max-width:640px;">
     <div class="card" style="margin-bottom:16px;">
       <h2 style="margin:0 0 8px; font-family:'Plus Jakarta Sans',sans-serif;">Налаштування акаунта</h2>
-      <p id="settings-email" style="font-size:14px; color:var(--text-2); margin:0 0 16px;"></p>
+      <p id="settings-email" style="font-size:14px; color:var(--text-2); margin:0 0 12px;"></p>
+
+      <div id="settings-verify-box" class="notice warn hidden" style="flex-direction:column; align-items:stretch; gap:10px; margin-bottom:16px;">
+        <div><strong>Пошта ще не підтверджена.</strong> Введіть 6-значний код із листа або натисніть «Надіслати лист ще раз».</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <input id="settings-verify-code" inputmode="numeric" maxlength="6" placeholder="6-значний код" style="flex:1 1 140px; max-width:200px; text-align:center; letter-spacing:4px; font-weight:700;" onkeydown="if(event.key==='Enter'){event.preventDefault(); verifyByCode('settings-verify-code');}" />
+          <button class="small primary" type="button" onclick="verifyByCode('settings-verify-code')">Підтвердити</button>
+          <button class="small" type="button" onclick="resendVerifyEmail()">Надіслати лист ще раз</button>
+        </div>
+      </div>
 
       <div style="margin-bottom:18px; padding-top:14px; border-top:1px solid var(--border);">
         <label class="field-label">Тема оформлення</label>
@@ -1461,8 +1480,9 @@
           });
           state.token = res.access_token;
           localStorage.setItem("rc_token", state.token);
+          state.userEmail = res.user?.email || email;
           state.verifyToken = res.verification_token_preview || "";
-          document.getElementById("verify-box").classList.remove("hidden");
+          renderVerifyBox(state.userEmail, res.email_delivery_mode || "dev", state.verifyToken);
           renderNav();
         } else {
           const res = await apiCall("/auth/login", {
@@ -1470,10 +1490,75 @@
             body: JSON.stringify({ email, password }),
           });
           state.token = res.access_token;
+          state.userEmail = res.user?.email || email;
           localStorage.setItem("rc_token", state.token);
           state.demoMode = false;
           navigate("editor");
         }
+      } catch (err) {
+        showAlert(err.message);
+      }
+    }
+
+    function renderVerifyBox(email, mode, previewToken) {
+      const box = document.getElementById("verify-box");
+      const text = document.getElementById("verify-box-text");
+      const devBtn = document.getElementById("btn-dev-verify");
+      if (!box || !text) return;
+
+      box.classList.remove("hidden");
+      if (mode === "sent") {
+        box.className = "notice ok";
+        text.innerHTML = `<strong>Акаунт створено!</strong> Ми надіслали реальний лист на <strong>${esc(email)}</strong>. Перейдіть за посиланням у листі або введіть 6-значний код нижче (перевірте також папку «Спам»).`;
+        if (devBtn) devBtn.classList.add("hidden");
+      } else if (mode === "failed") {
+        box.className = "notice warn";
+        text.innerHTML = `<strong>Акаунт створено</strong>, але поштовий сервер тимчасово не зміг надіслати лист на <strong>${esc(email)}</strong>. Спробуйте натиснути «Надіслати лист ще раз».`;
+        if (devBtn) devBtn.classList.add("hidden");
+      } else {
+        box.className = "notice warn";
+        text.innerHTML = `<strong>Акаунт створено (dev-режим пошти)!</strong> Поштовий провайдер (Brevo/Resend/SMTP) ще не підключений у змінних середовища. Для тесту натисніть кнопку нижче або налаштуйте пошту на сервері:`;
+        if (devBtn) devBtn.classList.toggle("hidden", !previewToken);
+      }
+    }
+
+    async function verifyByCode(inputId) {
+      showAlert("");
+      const inp = document.getElementById(inputId);
+      const code = (inp?.value || "").replace(/\D/g, "").trim();
+      if (code.length !== 6) {
+        showAlert("Введіть 6-значний числовий код із листа.");
+        return;
+      }
+      const email = state.userEmail || document.getElementById("auth-email")?.value?.trim() || "";
+      try {
+        await apiCall("/auth/verify-email", {
+          method: "POST",
+          body: JSON.stringify({ code, email }),
+        });
+        showAlert("Email успішно підтверджено!", "ok");
+        state.demoMode = false;
+        if (state.view === "settings") {
+          loadSettings();
+        } else {
+          setTimeout(() => navigate("editor"), 450);
+        }
+      } catch (err) {
+        showAlert(err.message);
+      }
+    }
+
+    async function resendVerifyEmail() {
+      showAlert("");
+      try {
+        const res = await apiCall("/auth/resend-verification", { method: "POST" });
+        if (res.verification_token_preview) {
+          state.verifyToken = res.verification_token_preview;
+        }
+        if (state.view === "auth") {
+          renderVerifyBox(state.userEmail || document.getElementById("auth-email")?.value?.trim() || "", res.email_delivery_mode, state.verifyToken);
+        }
+        showAlert(res.message || "Лист надіслано повторно.", res.email_sent ? "ok" : "warn");
       } catch (err) {
         showAlert(err.message);
       }
@@ -2315,8 +2400,11 @@
     async function loadSettings() {
       try {
         const u = await apiCall("/auth/me");
+        state.userEmail = u.email;
         document.getElementById("settings-email").innerHTML =
           `Email: <strong>${esc(u.email)}</strong> <span class="chip ${u.is_email_verified ? 'green' : 'amber'}" style="margin-left:6px;">${u.is_email_verified ? "Підтверджено" : "Не підтверджено"}</span>`;
+        const vBox = document.getElementById("settings-verify-box");
+        if (vBox) vBox.classList.toggle("hidden", !!u.is_email_verified);
       } catch (err) { showAlert(err.message); }
     }
 
@@ -2388,17 +2476,35 @@
 
     (async function init() {
       initTheme();
+      const params = new URLSearchParams(window.location.search);
+      const magicVerifyToken = params.get("verify_token");
+      let magicNotice = null;
+      if (magicVerifyToken) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        try {
+          const verifiedUser = await apiCall("/auth/verify-email", {
+            method: "POST",
+            body: JSON.stringify({ token: magicVerifyToken }),
+          });
+          magicNotice = { msg: `Пошту ${verifiedUser.email} успішно підтверджено!`, type: "ok" };
+        } catch (err) {
+          magicNotice = { msg: err.message || "Посилання підтвердження недійсне або вже використане.", type: "err" };
+        }
+      }
       if (state.token) {
         try {
-          await apiCall("/auth/me");
+          const me = await apiCall("/auth/me");
+          state.userEmail = me.email;
           await navigate("editor");
+          if (magicNotice) showAlert(magicNotice.msg, magicNotice.type);
           return;
         } catch {
           state.token = "";
           localStorage.removeItem("rc_token");
         }
       }
-      await navigate("landing");
+      await navigate(magicVerifyToken ? "login" : "landing");
+      if (magicNotice) showAlert(magicNotice.msg, magicNotice.type);
     })();
   </script>
 </body>

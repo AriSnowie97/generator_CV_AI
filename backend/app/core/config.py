@@ -46,6 +46,17 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: Optional[str] = None
     GOOGLE_CLIENT_SECRET: Optional[str] = None
 
+    # Transactional Email Verification (Brevo API / Resend API / SMTP)
+    BREVO_API_KEY: Optional[str] = None
+    RESEND_API_KEY: Optional[str] = None
+    SMTP_HOST: Optional[str] = None
+    SMTP_PORT: int = 587
+    SMTP_USER: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    SMTP_USE_SSL: bool = False
+    EMAIL_FROM: Optional[str] = None
+    EMAIL_FROM_NAME: str = "ResumeCraft"
+
     # AI settings
     GEMINI_API_KEY: Optional[str] = None
     GEMINI_MODEL: str = "gemini-2.5-flash"

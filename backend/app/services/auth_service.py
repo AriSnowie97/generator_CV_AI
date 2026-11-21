@@ -2,6 +2,7 @@
 
 import secrets
 from datetime import datetime, timezone
+from urllib.parse import urlencode
 
 import httpx
 from fastapi import HTTPException, status
@@ -11,8 +12,9 @@ from app.core.config import get_settings
 from app.core.security import create_access_token, hash_password, rate_limiter, verify_password
 from app.core.storage import file_storage
 from app.models.models import EventLog, Profile, Resume, User
-from app.schemas.auth import GoogleAuthRequest, LoginRequest, RegisterRequest
+from app.schemas.auth import GoogleAuthRequest, LoginRequest, RegisterRequest, VerifyEmailRequest
 from app.schemas.profile import ProfileData
+from app.services.email_service import DeliveryMode, send_verification_email
 
 
 def _default_profile_dict(email: str) -> dict:
@@ -21,8 +23,31 @@ def _default_profile_dict(email: str) -> dict:
     return data.model_dump()
 
 
-def register_user(db: Session, payload: RegisterRequest) -> tuple[User, str, str]:
-    """Register a new user with email + password and mandatory data-processing consent."""
+def _generate_verification_bundle() -> tuple[str, str, str]:
+    """Return (6-digit code, url_token, combined_db_value)."""
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    url_token = secrets.token_urlsafe(24)
+    return code, url_token, f"{code}:{url_token}"
+
+
+def _parse_stored_verification(stored: str | None) -> tuple[str, str]:
+    """Split stored `code:url_token` (or legacy plain token)."""
+    raw = (stored or "").strip()
+    if ":" in raw:
+        code, url_token = raw.split(":", 1)
+        return code, url_token
+    return "", raw
+
+
+def _build_verify_url(base_url: str, url_token: str) -> str:
+    clean_base = (base_url or get_settings().BACKEND_URL or "http://localhost:8000").rstrip("/")
+    return f"{clean_base}/?{urlencode({'verify_token': url_token})}"
+
+
+def register_user(
+    db: Session, payload: RegisterRequest, public_base_url: str = ""
+) -> tuple[User, str, str | None, bool, DeliveryMode]:
+    """Register a new user with email + password, mandatory consent, and real email verification."""
     normalized_email = payload.email.strip().lower()
     existing = db.query(User).filter(User.email == normalized_email).first()
     if existing:
@@ -31,13 +56,13 @@ def register_user(db: Session, payload: RegisterRequest) -> tuple[User, str, str
             detail="Користувач із таким email вже зареєстрований",
         )
 
-    verification_token = secrets.token_urlsafe(24)
+    code, url_token, stored_bundle = _generate_verification_bundle()
     now = datetime.now(timezone.utc)
     user = User(
         email=normalized_email,
         password_hash=hash_password(payload.password),
         is_email_verified=False,
-        email_verification_token=verification_token,
+        email_verification_token=stored_bundle,
         consent_accepted=True,
         consent_accepted_at=now,
     )
@@ -52,8 +77,12 @@ def register_user(db: Session, payload: RegisterRequest) -> tuple[User, str, str
     db.commit()
     db.refresh(user)
 
+    verify_url = _build_verify_url(public_base_url, url_token)
+    email_sent, delivery_mode = send_verification_email(normalized_email, code, verify_url)
+    preview_token = url_token if delivery_mode == "dev" else None
+
     token = create_access_token(user.id)
-    return user, token, verification_token
+    return user, token, preview_token, email_sent, delivery_mode
 
 
 def login_user(db: Session, payload: LoginRequest, client_ip: str) -> tuple[User, str]:
@@ -88,19 +117,102 @@ def login_user(db: Session, payload: LoginRequest, client_ip: str) -> tuple[User
     return user, token
 
 
-def verify_user_email(db: Session, token: str) -> User:
-    """Confirm user's email address using their verification token."""
-    user = db.query(User).filter(User.email_verification_token == token).first()
-    if not user:
+def verify_user_email(
+    db: Session,
+    payload: VerifyEmailRequest,
+    client_ip: str = "unknown",
+    current_user: User | None = None,
+) -> User:
+    """Confirm user's email address via magic link token OR 6-digit code."""
+    if payload.token:
+        clean_tok = payload.token.strip()
+        # Match either full stored value or `<code>:<url_token>` suffix
+        user = (
+            db.query(User)
+            .filter(
+                (User.email_verification_token == clean_tok)
+                | (User.email_verification_token.like(f"%:{clean_tok}"))
+            )
+            .first()
+        )
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Недійсне або застаріле посилання підтвердження email",
+            )
+        stored_code, stored_tok = _parse_stored_verification(user.email_verification_token)
+        if not (secrets.compare_digest(stored_tok, clean_tok) or secrets.compare_digest(user.email_verification_token or "", clean_tok)):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Недійсне або застаріле посилання підтвердження email",
+            )
+    elif payload.code:
+        clean_code = payload.code.strip()
+        target_email = (payload.email or (current_user.email if current_user else "") or "").strip().lower()
+        if not target_email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Вкажіть email для підтвердження кодом",
+            )
+        rate_key = f"verify_code:{client_ip}:{target_email}"
+        allowed, retry_after = rate_limiter.check_and_record(rate_key, max_attempts=6, window_seconds=600)
+        if not allowed:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Забагато спроб введення коду. Спробуйте через {retry_after} с.",
+            )
+        user = db.query(User).filter(User.email == target_email).first()
+        if not user or not user.email_verification_token:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Невірний код або email уже підтверджено",
+            )
+        stored_code, _ = _parse_stored_verification(user.email_verification_token)
+        if not stored_code or not secrets.compare_digest(stored_code, clean_code):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Невірний 6-значний код підтвердження",
+            )
+        rate_limiter.reset(rate_key)
+    else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Недійсний або застарілий токен підтвердження email",
+            detail="Передайте токен із листа або 6-значний код підтвердження",
         )
+
     user.is_email_verified = True
     user.email_verification_token = None
     db.commit()
     db.refresh(user)
     return user
+
+
+def resend_verification_email(
+    db: Session, user: User, public_base_url: str = ""
+) -> tuple[bool, DeliveryMode, str | None]:
+    """Generate a fresh code+link and resend verification email (rate-limited to 1 per 60s)."""
+    if user.is_email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Вашу електронну пошту вже підтверджено",
+        )
+
+    rate_key = f"resend_verify:{user.id}"
+    allowed, retry_after = rate_limiter.check_and_record(rate_key, max_attempts=1, window_seconds=60)
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Повторний лист можна надіслати через {retry_after} с.",
+        )
+
+    code, url_token, stored_bundle = _generate_verification_bundle()
+    user.email_verification_token = stored_bundle
+    db.commit()
+
+    verify_url = _build_verify_url(public_base_url, url_token)
+    email_sent, delivery_mode = send_verification_email(user.email, code, verify_url)
+    preview_token = url_token if delivery_mode == "dev" else None
+    return email_sent, delivery_mode, preview_token
 
 
 async def google_oauth_login(db: Session, payload: GoogleAuthRequest) -> tuple[User, str]:
