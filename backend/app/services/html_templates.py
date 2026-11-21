@@ -189,6 +189,19 @@ def _template_css(template_id: Literal["minimal", "classic", "it"]) -> str:
             padding: 30px 36px;
         }
     }
+    @media screen and (max-width: 520px) {
+        body {
+            padding: 16px 14px;
+            font-size: 9.5pt;
+        }
+        h1 { font-size: 16pt; }
+        .target-role { font-size: 10.5pt; }
+        .cv-item-header {
+            flex-direction: column;
+            gap: 2px;
+        }
+        .cv-item-dates { font-size: 8.6pt; }
+    }
     @media print {
         body {
             padding: 0;

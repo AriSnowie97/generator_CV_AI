@@ -53,19 +53,20 @@
       position: sticky;
       top: 0;
       z-index: 40;
-      background: rgba(255, 255, 255, 0.88);
+      background: rgba(255, 255, 255, 0.92);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
     }
     .nav-wrap {
       max-width: 1280px;
       margin: 0 auto;
-      padding: 0 24px;
-      height: 64px;
+      padding: 10px 24px;
+      min-height: 64px;
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
+      gap: 10px 16px;
     }
     .logo {
       display: inline-flex;
@@ -515,6 +516,55 @@
     }
     footer a { color: var(--muted); text-decoration: none; }
     footer a:hover { color: var(--brand); text-decoration: underline; }
+
+    /* Mobile Editor Switcher & Responsive Polish */
+    .editor-right-col { position: sticky; top: 82px; }
+    .mobile-editor-tabs {
+      display: none;
+      position: sticky;
+      top: 66px;
+      z-index: 30;
+      background: rgba(248, 250, 252, 0.96);
+      backdrop-filter: blur(8px);
+      padding: 8px 0 12px;
+      margin-bottom: 6px;
+    }
+    .mobile-editor-tabs .segmented {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      width: 100%;
+    }
+    .mobile-editor-tabs .segmented button {
+      padding: 9px 6px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 1024px) {
+      .editor-right-col { position: static; }
+      .mobile-editor-tabs { display: block; }
+      .mob-hide { display: none !important; }
+    }
+
+    @media (max-width: 640px) {
+      html, body { overflow-x: hidden; }
+      .nav-wrap { padding: 10px 14px; }
+      .nav-actions { gap: 6px; }
+      .nav-actions button { padding: 6px 10px; font-size: 12.5px; }
+      .logo { font-size: 17px; gap: 8px; }
+      .logo-mark { width: 30px; height: 30px; }
+      .container { padding: 14px; }
+      .card { padding: 15px; }
+      .showcase-shell { padding: 10px; border-radius: 14px; }
+      .segmented { flex-wrap: wrap; max-width: 100%; }
+      .segmented button { padding: 6px 9px; font-size: 12px; }
+      .hero-cta button { width: 100%; }
+      .ai-variant { flex-direction: column; align-items: stretch; }
+      .preview-frame { min-height: 520px; }
+    }
+
+    @media (max-width: 440px) {
+      .logo-tag { display: none; }
+    }
   </style>
 </head>
 <body>
@@ -695,6 +745,15 @@
       <div><strong>Попередження ATS:</strong> орієнтовна довжина резюме — <span id="est-pages">3</span> стор. Рекомендуємо скоротити до 1–2 сторінок A4.</div>
     </div>
 
+    <!-- Mobile Tab Switcher (phones / tablets <= 1024px) -->
+    <div class="mobile-editor-tabs">
+      <div class="segmented">
+        <button class="active" id="mtab-form" onclick="setMobileTab('form')">✏️ Форма</button>
+        <button id="mtab-preview" onclick="setMobileTab('preview')">📄 Перегляд</button>
+        <button id="mtab-ats" onclick="setMobileTab('ats')">✅ ATS</button>
+      </div>
+    </div>
+
     <div class="workspace-grid">
       <!-- Left: Form -->
       <div id="editor-left">
@@ -786,7 +845,7 @@
       </div>
 
       <!-- Right: Preview & ATS Checker -->
-      <div style="position:sticky; top:82px;">
+      <div id="editor-right" class="editor-right-col mob-hide">
         <div class="showcase-shell">
           <div class="showcase-bar">
             <div class="segmented">
@@ -1043,7 +1102,34 @@
       document.getElementById("rtab-ats").classList.toggle("active", tab === "ats");
       document.getElementById("right-panel-preview").classList.toggle("hidden", tab !== "preview");
       document.getElementById("right-panel-ats").classList.toggle("hidden", tab !== "ats");
+      if (window.innerWidth <= 1024) {
+        setMobileTab(tab === "ats" ? "ats" : "preview");
+      }
       if (tab === "ats") runAtsCheck();
+    }
+
+    function setMobileTab(tab) {
+      ["form", "preview", "ats"].forEach((id) => {
+        document.getElementById(`mtab-${id}`)?.classList.toggle("active", id === tab);
+      });
+      const left = document.getElementById("editor-left");
+      const right = document.getElementById("editor-right");
+      if (tab === "form") {
+        left.classList.remove("mob-hide");
+        right.classList.add("mob-hide");
+      } else {
+        left.classList.add("mob-hide");
+        right.classList.remove("mob-hide");
+        document.getElementById("rtab-preview").classList.toggle("active", tab === "preview");
+        document.getElementById("rtab-ats").classList.toggle("active", tab === "ats");
+        document.getElementById("right-panel-preview").classList.toggle("hidden", tab !== "preview");
+        document.getElementById("right-panel-ats").classList.toggle("hidden", tab !== "ats");
+        if (tab === "ats") runAtsCheck();
+        if (tab === "preview") {
+          const iframe = document.getElementById("editor-preview");
+          setTimeout(() => autoSizeIframe(iframe), 60);
+        }
+      }
     }
 
     async function submitAuth() {
