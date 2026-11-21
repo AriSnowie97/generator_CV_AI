@@ -106,16 +106,40 @@ def test_ats_check_endpoint_and_vacancy_keywords(client):
                     "bullets": ["Прискорила обробку запитів на 40% та покрила код 14 автотестами"],
                 }
             ],
+            "education": [
+                {
+                    "institution": "ДУІКТ",
+                    "degree": "Бакалавр",
+                    "field_of_study": "Інформаційні технології",
+                    "start_date": "2023-09",
+                    "is_current": True,
+                }
+            ],
             "skills": ["Python", "FastAPI", "PostgreSQL", "Docker", "Git"],
         },
     }
     resp = client.post("/api/resume/ats-check", json=payload)
     assert resp.status_code == 200, resp.text
     body = resp.json()
-    assert body["score"] >= 80
-    assert len(body["checks"]) == 7
+    assert body["score"] >= 85
+    assert len(body["checks"]) == 8
     assert any(k.lower() == "fastapi" for k in body["matched_keywords"])
     assert any(k.lower() == "kubernetes" for k in body["missing_keywords"])
+
+    # Sparse resume without education, skills, or bullets must score honestly low (< 45)
+    sparse = client.post(
+        "/api/resume/ats-check",
+        json={
+            "data": {
+                "contacts": {"first_name": "Аріна", "last_name": "Бадовська", "email": "a@b.com", "phone": "+380681112233"},
+                "target_role": "AI Prompt Engineer",
+                "summary": "Відповідальний спеціаліст із досвідом роботи над прикладними задачами та проєктами.",
+                "experiences": [{"company": "Vuzoll", "position": "AI Prompt Engineer", "bullets": [""]}],
+            }
+        },
+    )
+    assert sparse.status_code == 200
+    assert sparse.json()["score"] <= 45
 
 
 def test_resume_auto_translation_uk_to_en_and_pii_safety(client):

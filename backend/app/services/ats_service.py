@@ -99,22 +99,33 @@ def analyze_ats(req: ATSCheckRequest) -> ATSCheckResponse:
     summary_len = len(data.summary.strip())
     summary_ok = 60 <= summary_len <= 650
 
-    all_bullets = [b.strip() for exp in data.experiences for b in exp.bullets if b.strip()]
+    all_bullets = [b.strip() for exp in data.experiences for b in exp.bullets if len(b.strip()) >= 12]
     exp_ok = len(data.experiences) >= 1 and len(all_bullets) >= 1
+
+    edu_ok = any(bool(e.institution.strip()) for e in data.education)
 
     has_metrics = any(METRIC_RE.search(b) or any(ch.isdigit() for ch in b) for b in all_bullets)
 
     skills_count = len([s for s in data.skills if s.strip()])
     skills_ok = 5 <= skills_count <= 30
 
-    length_ok = not page_warning
+    filled_core_sections = sum(
+        [
+            contacts_ok,
+            summary_ok,
+            exp_ok,
+            edu_ok,
+            skills_count >= 1,
+        ]
+    )
+    length_ok = (not page_warning) and filled_core_sections >= 4
 
     checks = [
         ATSCheckItem(
             key="contacts",
             label="Контакти у чистому тексті",
             passed=contacts_ok,
-            tip="Вкажіть ім'я, email і телефон без іконок чи картинок — ATS зчитує їх першими."
+            tip="Вкажіть ім'я, email і телефон — ATS зчитує їх першими."
             if not contacts_ok
             else "Ім'я, email і телефон коректно зчитуються ATS.",
         ),
@@ -138,9 +149,17 @@ def analyze_ats(req: ATSCheckRequest) -> ATSCheckResponse:
             key="experience",
             label="Досвід зі списком досягнень",
             passed=exp_ok,
-            tip="Додайте щонайменше 1 місце досвіду або навчальний проєкт і пункти досягнень."
+            tip="Додайте щонайменше 1 місце досвіду або навчальний проєкт і змістовні пункти досягнень."
             if not exp_ok
             else f"Знайдено {len(data.experiences)} запис(и) досвіду та {len(all_bullets)} пункт(ів) досягнень.",
+        ),
+        ATSCheckItem(
+            key="education",
+            label="Заповнений блок «Освіта»",
+            passed=edu_ok,
+            tip="Додайте заклад освіти, спеціальність або курси — ATS часто перевіряє наявність секції «Освіта»."
+            if not edu_ok
+            else "Блок «Освіта» заповнено коректно.",
         ),
         ATSCheckItem(
             key="metrics",
@@ -160,22 +179,27 @@ def analyze_ats(req: ATSCheckRequest) -> ATSCheckResponse:
         ),
         ATSCheckItem(
             key="structure_length",
-            label="ATS-структура та обсяг (1–2 стор.)",
+            label="Повна ATS-структура та обсяг (1–2 стор.)",
             passed=length_ok,
-            tip="Скоротіть резюме до 1–2 сторінок A4. Шаблон уже без таблиць і з виділюваним текстом."
+            tip=(
+                "Скоротіть резюме до 1–2 сторінок A4."
+                if page_warning
+                else f"Заповнено {filled_core_sections}/5 основних секцій. Заповніть щонайменше 4 секції (контакти, про себе, досвід, освіта, навички)."
+            )
             if not length_ok
-            else f"Одноколонкова структура без таблиць, обсяг {pages} стор. A4 — ідеально для ATS.",
+            else f"Одноколонкова структура без таблиць, {filled_core_sections}/5 секцій, обсяг {pages} стор. A4 — ідеально для ATS.",
         ),
     ]
 
     weights = {
-        "contacts": 18,
-        "target_role": 14,
-        "summary": 14,
+        "contacts": 15,
+        "target_role": 10,
+        "summary": 12,
         "experience": 16,
-        "metrics": 12,
-        "skills": 14,
-        "structure_length": 12,
+        "education": 12,
+        "metrics": 10,
+        "skills": 15,
+        "structure_length": 10,
     }
     base_score = sum(weights[c.key] for c in checks if c.passed)
 
