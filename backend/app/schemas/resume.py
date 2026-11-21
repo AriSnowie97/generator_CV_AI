@@ -51,3 +51,4 @@ class ResumePreviewRequest(BaseModel):
     language: ResumeLanguage = "uk"
     block_order: list[str] = Field(default_factory=lambda: list(DEFAULT_BLOCK_ORDER))
     data: ProfileData = Field(default_factory=ProfileData)
+    show_branding: bool = True

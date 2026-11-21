@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ResumeCraft — ATS-генератор резюме з AI</title>
+  <title>ResumeCraft™ — ATS-генератор резюме з AI</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%232563eb'/%3E%3Cstop offset='100%25' stop-color='%234f46e5'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-family='Arial,sans-serif' font-weight='800' font-size='26' fill='white'%3ERC%3C/text%3E%3C/svg%3E" />
   <script>
     (function () {
       try {
@@ -760,7 +761,7 @@
               <line x1="16" y1="17" x2="8" y2="17"/>
             </svg>
           </div>
-          <span>ResumeCraft</span>
+          <span>ResumeCraft<sup style="font-size:10px; font-weight:700; color:var(--brand); margin-left:1px;">™</sup></span>
           <span class="logo-tag">ATS-Ready</span>
         </div>
         <button class="small ghost" id="theme-toggle-btn" onclick="cycleTheme()" title="Перемкнути тему (Системна / Світла / Темна)" style="padding:6px 10px;">
@@ -920,6 +921,10 @@
             <span id="ats-score-pill" class="ats-pill">ATS: —</span>
           </button>
           <span id="quota-badge" class="chip hidden">AI: 10/10</span>
+          <label style="display:inline-flex; align-items:center; gap:5px; font-size:12px; color:var(--muted); cursor:pointer;">
+            <input type="checkbox" id="chk-branding" checked style="width:auto; margin:0;" onchange="state.showBranding=this.checked; schedulePreview()" />
+            <span>Підпис ResumeCraft™</span>
+          </label>
           <span id="save-badge" style="font-size:12px; font-weight:600; color:var(--ok);"></span>
         </div>
       </div>
@@ -1104,8 +1109,16 @@
 
   <footer>
     <div class="footer-inner">
-      <span>© 2026 ResumeCraft · ATS-генератор резюме з AI-підказками</span>
-      <a href="/docs" target="_blank">Документація API (Swagger)</a>
+      <div>
+        <strong style="color:var(--text);">© 2026 ResumeCraft™</strong> · Сервіс-генератор ATS-резюме з AI-підказками
+        <div style="font-size:11.5px; color:var(--muted); margin-top:2px;">
+          Автор проєкту: Аріна Бадовська · ДУІКТ (ННІ ІТ, кафедра технологій цифрового розвитку)
+        </div>
+      </div>
+      <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap;">
+        <a href="https://github.com/AriSnowie97/generator_CV_AI" target="_blank" rel="noopener">GitHub</a>
+        <a href="/docs" target="_blank">Документація API (Swagger)</a>
+      </div>
     </div>
   </footer>
 
@@ -1172,6 +1185,7 @@
       templateId: "minimal",
       language: "uk",
       rightTab: "preview",
+      showBranding: true,
       blockOrder: ["summary", "experience", "education", "skills", "languages", "links"],
       data: JSON.parse(JSON.stringify(DEMO_DATA)),
       autosaveTimer: null,
@@ -1719,6 +1733,7 @@
             language: state.language,
             block_order: state.blockOrder,
             data: state.data,
+            show_branding: state.showBranding,
           }),
         });
         const iframe = document.getElementById("editor-preview");
@@ -1912,6 +1927,7 @@
             block_order: state.blockOrder,
             data: state.data,
             use_ai_filename: true,
+            show_branding: state.showBranding,
           }),
         });
         if (!resp.ok) throw new Error("Не вдалося експортувати файл");

@@ -232,6 +232,15 @@ def _template_css(template_id: Literal["minimal", "classic", "it"]) -> str:
     .links-list { list-style: none; margin: 0; padding: 0; font-size: 9.4pt; }
     .links-list li { margin-bottom: 2px; word-break: break-all; }
     .link-url { color: #1f2937; }
+    .cv-brand {
+        margin-top: 18px;
+        padding-top: 6px;
+        border-top: 1px solid #f1f5f9;
+        text-align: right;
+        font-size: 7.5pt;
+        color: #9ca3af;
+        letter-spacing: 0.02em;
+    }
     """
 
     if template_id == "classic":
@@ -275,6 +284,7 @@ def render_resume_html(
     template_id: Literal["minimal", "classic", "it"],
     language: Literal["uk", "en"],
     block_order: list[str],
+    show_branding: bool = True,
 ) -> str:
     """Render complete standalone UTF-8 HTML document for PDF export or screen preview."""
     labels = SECTION_TITLES.get(language, SECTION_TITLES["uk"])
@@ -292,13 +302,17 @@ def render_resume_html(
     ]
     contacts_html = '<span class="sep">|</span>'.join(f"<span>{_e(item)}</span>" for item in contact_parts)
     sections_html = "".join(_render_section(b, data, labels, template_id) for b in block_order)
+    brand_text = "Створено в ResumeCraft™" if language == "uk" else "Created with ResumeCraft™"
+    brand_html = f'<footer class="cv-brand">{brand_text}</footer>' if show_branding else ""
 
     return f"""<!DOCTYPE html>
 <html lang="{_e(language)}">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{_e(name)} - Resume</title>
+  <meta name="generator" content="ResumeCraft" />
+  <meta name="author" content="ResumeCraft — Arina Badovska" />
+  <title>{_e(name)} - ResumeCraft</title>
   <style>{_template_css(template_id)}</style>
 </head>
 <body>
@@ -310,5 +324,6 @@ def render_resume_html(
   <main>
     {sections_html}
   </main>
+  {brand_html}
 </body>
 </html>"""

@@ -68,7 +68,13 @@ def sync_from_profile(current_user: User = Depends(get_current_user), db: Sessio
 @router.post("/preview-html", response_class=HTMLResponse)
 def preview_html(payload: ResumePreviewRequest):
     """Render live ATS-friendly HTML preview (accessible for both users and guest demo)."""
-    html_str = render_resume_html(payload.data, payload.template_id, payload.language, payload.block_order)
+    html_str = render_resume_html(
+        payload.data,
+        payload.template_id,
+        payload.language,
+        payload.block_order,
+        show_branding=payload.show_branding,
+    )
     return HTMLResponse(content=html_str)
 
 

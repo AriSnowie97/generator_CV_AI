@@ -106,10 +106,13 @@ def generate_docx_bytes(
     template_id: Literal["minimal", "classic", "it"],
     language: Literal["uk", "en"],
     block_order: list[str],
+    show_branding: bool = True,
 ) -> bytes:
     """Build a clean, watermark-free DOCX document respecting block order and language."""
     labels = SECTION_TITLES.get(language, SECTION_TITLES["uk"])
     doc = Document()
+    doc.core_properties.author = "ResumeCraft — Аріна Бадовська"
+    doc.core_properties.comments = "Created with ResumeCraft"
 
     for section in doc.sections:
         section.top_margin = Inches(0.6)
@@ -213,6 +216,13 @@ def generate_docx_bytes(
                 for item in items:
                     doc.add_paragraph(item)
 
+    if show_branding:
+        brand_p = doc.add_paragraph()
+        brand_p.paragraph_format.space_before = Pt(14)
+        brand_run = brand_p.add_run("Створено в ResumeCraft™" if language == "uk" else "Created with ResumeCraft™")
+        brand_run.font.size = Pt(8)
+        brand_run.font.color.rgb = RGBColor(0x9C, 0xA3, 0xAF)
+
     buf = io.BytesIO()
     doc.save(buf)
     return buf.getvalue()
@@ -227,6 +237,7 @@ def export_resume_file(
     block_order: list[str],
     data: ProfileData,
     use_ai_filename: bool = True,
+    show_branding: bool = True,
 ) -> tuple[bytes, str, str]:
     """Generate PDF or DOCX, persist in storage, log analytics events, and return `(bytes, filename, media_type)`."""
     fname_req = AIFilenameRequest(
@@ -239,11 +250,11 @@ def export_resume_file(
     filename, _, _ = generate_resume_filename(db, user, fname_req, count_quota=False)
 
     if fmt == "pdf":
-        html_doc = render_resume_html(data, template_id, language, block_order)
+        html_doc = render_resume_html(data, template_id, language, block_order, show_branding=show_branding)
         file_bytes = generate_pdf_bytes(html_doc)
         media_type = "application/pdf"
     else:
-        file_bytes = generate_docx_bytes(data, template_id, language, block_order)
+        file_bytes = generate_docx_bytes(data, template_id, language, block_order, show_branding=show_branding)
         media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
     storage_key = f"exports/{user.id}/{uuid.uuid4()}.{fmt}"

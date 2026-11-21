@@ -33,6 +33,7 @@ def export_resume(
         block_order=payload.block_order or resume.block_order,
         data=data,
         use_ai_filename=payload.use_ai_filename,
+        show_branding=payload.show_branding,
     )
     encoded_name = quote(filename)
     return Response(
