@@ -9,7 +9,7 @@ from app.schemas.profile import ProfileData
 
 TemplateId = Literal["minimal", "classic", "it"]
 ResumeLanguage = Literal["uk", "en"]
-DEFAULT_BLOCK_ORDER = ["summary", "experience", "education", "skills", "languages", "links"]
+DEFAULT_BLOCK_ORDER = ["summary", "experience", "education", "courses", "skills", "languages", "links"]
 ALLOWED_BLOCKS = set(DEFAULT_BLOCK_ORDER)
 
 

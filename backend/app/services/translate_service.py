@@ -293,6 +293,10 @@ async def translate_resume_data(req: TranslateResumeRequest) -> TranslateResumeR
         if _needs_translation(edu.field_of_study, dst):
             fields_to_translate[f"edu_{edi}_field"] = edu.field_of_study
 
+    for ci, course in enumerate(data.courses):
+        if _needs_translation(course.title, dst):
+            fields_to_translate[f"course_{ci}_title"] = course.title
+
     for si, skill in enumerate(data.skills):
         # Preserve ASCII technical terms (Python, FastAPI, Docker); only translate Cyrillic skills when -> en
         if dst == "en" and CYRILLIC_RE.search(skill):
@@ -355,6 +359,10 @@ async def translate_resume_data(req: TranslateResumeRequest) -> TranslateResumeR
             edu.degree = results[f"edu_{edi}_deg"]
         if f"edu_{edi}_field" in results:
             edu.field_of_study = results[f"edu_{edi}_field"]
+
+    for ci, course in enumerate(data.courses):
+        if f"course_{ci}_title" in results:
+            course.title = results[f"course_{ci}_title"]
 
     for si in range(len(data.skills)):
         if f"skill_{si}" in results:

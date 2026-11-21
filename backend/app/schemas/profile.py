@@ -116,6 +116,14 @@ class LinkItem(BaseModel):
     url: str = Field(default="", max_length=300)
 
 
+class CourseItem(BaseModel):
+    id: str = Field(default="")
+    title: str = Field(default="", max_length=160)
+    provider: str = Field(default="", max_length=120)
+    completion_date: str = Field(default="", max_length=16)
+    certificate_url: str = Field(default="", max_length=300)
+
+
 class ProfileData(BaseModel):
     contacts: ContactInfo = Field(default_factory=ContactInfo)
     target_role: str = Field(default="", max_length=120)
@@ -124,6 +132,7 @@ class ProfileData(BaseModel):
     work_format: str = Field(default="", max_length=60)
     experiences: list[ExperienceItem] = Field(default_factory=list)
     education: list[EducationItem] = Field(default_factory=list)
+    courses: list[CourseItem] = Field(default_factory=list, max_length=20)
     skills: list[str] = Field(default_factory=list)
     languages: list[LanguageItem] = Field(default_factory=list)
     links: list[LinkItem] = Field(default_factory=list)

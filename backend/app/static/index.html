@@ -1051,9 +1051,19 @@
           <div id="edu-list"></div>
         </div>
 
+        <!-- Courses & Certifications -->
+        <div class="card" style="margin-bottom:16px;">
+          <div class="toolbar" style="margin-bottom:6px;">
+            <h3 style="margin:0; font-size:15.5px;">5. Курси та сертифікати</h3>
+            <button class="small" onclick="addCourse()">+ Додати курс</button>
+          </div>
+          <p style="margin:0 0 8px; font-size:12.5px; color:var(--muted);">Додайте профільні курси, буткемпи або сертифікати (Coursera, Udemy, Prometheus, Google тощо).</p>
+          <div id="courses-list"></div>
+        </div>
+
         <!-- Skills, Languages, Links -->
         <div class="card" style="margin-bottom:16px;">
-          <h3 style="margin:0 0 12px; font-size:15.5px;">5. Навички, мови та посилання</h3>
+          <h3 style="margin:0 0 12px; font-size:15.5px;">6. Навички, мови та посилання</h3>
           <label class="field-label">Ключові навички (додайте через Enter або кому, до 30)</label>
           <div style="display:flex; gap:8px;">
             <input id="f-skill-input" placeholder="Наприклад: Python, FastAPI, SQL, Docker" onkeydown="if(event.key==='Enter'){event.preventDefault(); addSkillFromInput();}" />
@@ -1163,6 +1173,7 @@
       summary: "Про себе",
       experience: "Досвід",
       education: "Освіта",
+      courses: "Курси",
       skills: "Навички",
       languages: "Мови",
       links: "Посилання",
@@ -1206,6 +1217,15 @@
           is_current: true,
         },
       ],
+      courses: [
+        {
+          id: "course-1",
+          title: "Python Backend & FastAPI Intensive",
+          provider: "Coursera / Google",
+          completion_date: "2025-11",
+          certificate_url: "",
+        },
+      ],
       skills: ["Python", "FastAPI", "TypeScript", "Next.js", "PostgreSQL", "Docker", "Git"],
       languages: [{ name: "Українська", level: "Рідна" }, { name: "Англійська", level: "B2 (Upper-Intermediate)" }],
       links: [{ label: "GitHub", url: "https://github.com/AriSnowie97/generator_CV_AI" }],
@@ -1221,7 +1241,7 @@
       templateId: "minimal",
       language: "uk",
       rightTab: "preview",
-      blockOrder: ["summary", "experience", "education", "skills", "languages", "links"],
+      blockOrder: ["summary", "experience", "education", "courses", "skills", "languages", "links"],
       data: JSON.parse(JSON.stringify(DEMO_DATA)),
       autosaveTimer: null,
       previewTimer: null,
@@ -1315,7 +1335,7 @@
       state.data = JSON.parse(JSON.stringify(DEMO_DATA));
       state.templateId = "minimal";
       state.language = "uk";
-      state.blockOrder = ["summary", "experience", "education", "skills", "languages", "links"];
+      state.blockOrder = ["summary", "experience", "education", "courses", "skills", "languages", "links"];
       navigate("editor");
       syncEditorUI();
     }
@@ -1327,7 +1347,7 @@
         body: JSON.stringify({
           template_id: state.galleryTemplate,
           language: "uk",
-          block_order: ["summary", "experience", "education", "skills", "languages", "links"],
+          block_order: ["summary", "experience", "education", "courses", "skills", "languages", "links"],
           data: DEMO_DATA,
         }),
       });
@@ -1537,6 +1557,7 @@
       renderBlockOrder();
       renderExperiences();
       renderEducation();
+      renderCourses();
       schedulePreview();
       scheduleAtsCheck();
     }
@@ -1810,6 +1831,40 @@
     function addEducation() {
       state.data.education.push({ id: `ed-${Date.now()}`, institution: "", degree: "", field_of_study: "", start_date: "", end_date: "", is_current: false });
       renderEducation();
+      onDataMutated();
+    }
+
+    function renderCourses() {
+      const host = document.getElementById("courses-list");
+      if (!host) return;
+      const list = state.data.courses || (state.data.courses = []);
+      if (!list.length) {
+        host.innerHTML = `<p style="font-size:13px; color:var(--muted); margin:8px 0 0;">Ще не додано курсів — натисніть «+ Додати курс», щоб вказати сертифікати чи навчання.</p>`;
+        return;
+      }
+      host.innerHTML = list
+        .map((c, idx) => `
+          <div class="sub-card">
+            <div class="toolbar" style="margin-bottom:8px;">
+              <strong style="font-size:13px; color:var(--text-2);">Курс #${idx + 1}</strong>
+              <button class="small ghost" style="color:var(--err);" onclick="state.data.courses.splice(${idx},1); renderCourses(); onDataMutated()">Видалити</button>
+            </div>
+            <div class="field-grid">
+              <div><label class="field-label">Назва курсу / сертифіката</label><input placeholder="Напр.: Prompt Engineering for Developers" value="${esc(c.title)}" oninput="state.data.courses[${idx}].title=this.value; onDataMutated()" /></div>
+              <div><label class="field-label">Платформа / Організація</label><input placeholder="Coursera, DeepLearning.AI, Prometheus..." value="${esc(c.provider)}" oninput="state.data.courses[${idx}].provider=this.value; onDataMutated()" /></div>
+              <div><label class="field-label">Дата завершення</label>${renderMonthYearPicker("courses", idx, "completion_date", c.completion_date, false)}</div>
+              <div><label class="field-label">Посилання на сертифікат (опціонально)</label><input type="url" placeholder="https://..." value="${esc(c.certificate_url)}" oninput="state.data.courses[${idx}].certificate_url=this.value; onDataMutated()" /></div>
+            </div>
+          </div>
+        `)
+        .join("");
+    }
+
+    function addCourse() {
+      const list = state.data.courses || (state.data.courses = []);
+      if (list.length >= 20) { showAlert("Максимум 20 курсів."); return; }
+      list.push({ id: `c-${Date.now()}`, title: "", provider: "", completion_date: "", certificate_url: "" });
+      renderCourses();
       onDataMutated();
     }
 

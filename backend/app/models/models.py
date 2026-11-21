@@ -85,7 +85,7 @@ class Resume(Base):
     language: Mapped[str] = mapped_column(String(8), default="uk", nullable=False)
     block_order: Mapped[list] = mapped_column(
         JSON,
-        default=lambda: ["summary", "experience", "education", "skills", "languages", "links"],
+        default=lambda: ["summary", "experience", "education", "courses", "skills", "languages", "links"],
         nullable=False,
     )
     data_json: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)

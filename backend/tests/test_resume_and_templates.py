@@ -6,11 +6,18 @@ from tests.conftest import register_and_auth
 def test_template_switching_and_block_order_persistence(client):
     headers = register_and_auth(client, email="editor@example.com")["headers"]
 
-    custom_order = ["skills", "experience", "summary", "education", "languages", "links"]
+    custom_order = ["skills", "experience", "courses", "summary", "education", "languages", "links"]
     data_payload = {
         "contacts": {"first_name": "Іван", "last_name": "Петренко", "email": "editor@example.com"},
         "target_role": "Frontend Developer",
         "summary": "React та TypeScript розробник.",
+        "courses": [
+            {
+                "title": "Prompt Engineering",
+                "provider": "DeepLearning.AI",
+                "completion_date": "2025-10",
+            }
+        ],
         "skills": ["React", "TypeScript", "Next.js"],
     }
 
@@ -49,6 +56,15 @@ def test_template_switching_and_block_order_persistence(client):
     assert loaded["block_order"] == custom_order
     assert loaded["data"]["target_role"] == "Frontend Developer"
     assert loaded["data"]["skills"] == ["React", "TypeScript", "Next.js"]
+    assert loaded["data"]["courses"][0]["title"] == "Prompt Engineering"
+
+    prev = client.post(
+        "/api/resume/preview-html",
+        json={"template_id": "it", "language": "uk", "block_order": custom_order, "data": loaded["data"]},
+    )
+    assert prev.status_code == 200
+    assert "Курси та сертифікати" in prev.text
+    assert "Prompt Engineering" in prev.text
 
 
 def test_guest_preview_escapes_xss_and_supports_all_templates(client):

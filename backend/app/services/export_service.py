@@ -210,6 +210,23 @@ def generate_docx_bytes(
                     r_d.font.size = Pt(9.5)
                     r_d.font.color.rgb = RGBColor(0x52, 0x52, 0x5B)
 
+        elif block == "courses" and data.courses:
+            valid_courses = [c for c in data.courses if c.title.strip() or c.provider.strip()]
+            if valid_courses:
+                _add_heading(labels["courses"])
+                for c in valid_courses:
+                    p = doc.add_paragraph()
+                    r1 = p.add_run(c.title.strip())
+                    r1.bold = True
+                    if c.provider.strip():
+                        p.add_run(f" · {c.provider.strip()}")
+                    if c.completion_date.strip():
+                        r_d = p.add_run(f" ({c.completion_date.strip()})")
+                        r_d.font.size = Pt(9.5)
+                        r_d.font.color.rgb = RGBColor(0x52, 0x52, 0x5B)
+                    if c.certificate_url.strip():
+                        p.add_run(f"\n{c.certificate_url.strip()}")
+
         elif block == "skills" and data.skills:
             _add_heading(labels["skills"])
             doc.add_paragraph(", ".join(s for s in data.skills if s.strip()))

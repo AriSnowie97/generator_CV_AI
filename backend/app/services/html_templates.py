@@ -10,6 +10,7 @@ SECTION_TITLES = {
         "summary": "Про себе",
         "experience": "Досвід роботи",
         "education": "Освіта",
+        "courses": "Курси та сертифікати",
         "skills": "Навички",
         "languages": "Мови",
         "links": "Посилання",
@@ -21,6 +22,7 @@ SECTION_TITLES = {
         "summary": "Summary",
         "experience": "Experience",
         "education": "Education",
+        "courses": "Courses & Certifications",
         "skills": "Skills",
         "languages": "Languages",
         "links": "Links",
@@ -114,6 +116,32 @@ def _render_section(
         return f"""
         <section class="cv-section">
             <h2>{_e(labels['education'])}</h2>
+            {''.join(items_html)}
+        </section>
+        """
+
+    if block_key == "courses":
+        valid_courses = [c for c in data.courses if c.title.strip() or c.provider.strip()]
+        if not valid_courses:
+            return ""
+        items_html = []
+        for c in valid_courses:
+            provider_part = f" <span class='company-sep'>|</span> <span class='company-name'>{_e(c.provider)}</span>" if c.provider.strip() else ""
+            cert_part = f"<p class='muted link-url'>{_e(c.certificate_url)}</p>" if c.certificate_url.strip() else ""
+            items_html.append(
+                f"""
+                <article class="cv-item">
+                    <div class="cv-item-header">
+                        <div class="cv-item-title"><strong>{_e(c.title)}</strong>{provider_part}</div>
+                        <div class="cv-item-dates">{_e(c.completion_date)}</div>
+                    </div>
+                    {cert_part}
+                </article>
+                """
+            )
+        return f"""
+        <section class="cv-section">
+            <h2>{_e(labels['courses'])}</h2>
             {''.join(items_html)}
         </section>
         """

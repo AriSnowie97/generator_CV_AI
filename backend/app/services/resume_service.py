@@ -17,10 +17,12 @@ def estimate_pages(data: ProfileData) -> tuple[int, bool]:
         char_count += len(exp.company) + len(exp.position) + sum(len(b) for b in exp.bullets) + 60
     for edu in data.education:
         char_count += len(edu.institution) + len(edu.degree) + len(edu.field_of_study) + 50
+    for c in data.courses:
+        char_count += len(c.title) + len(c.provider) + len(c.certificate_url) + 40
     char_count += sum(len(s) + 4 for s in data.skills)
     char_count += len(data.languages) * 25 + len(data.links) * 40
 
-    line_budget = len(data.experiences) * 3 + len(data.education) * 2 + (char_count // 75)
+    line_budget = len(data.experiences) * 3 + len(data.education) * 2 + len(data.courses) * 2 + (char_count // 75)
     if line_budget <= 42 and char_count <= 2600:
         pages = 1
     elif line_budget <= 84 and char_count <= 5200:

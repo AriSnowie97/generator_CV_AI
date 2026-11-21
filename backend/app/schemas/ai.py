@@ -63,7 +63,9 @@ class ExportRequest(BaseModel):
     format: Literal["pdf", "docx"]
     template_id: Literal["minimal", "classic", "it"] = "minimal"
     language: ResumeLanguage = "uk"
-    block_order: list[str] = Field(default_factory=lambda: ["summary", "experience", "education", "skills", "languages", "links"])
+    block_order: list[str] = Field(
+        default_factory=lambda: ["summary", "experience", "education", "courses", "skills", "languages", "links"]
+    )
     data: Optional[ProfileData] = None
     use_ai_filename: bool = True
     show_branding: bool = True

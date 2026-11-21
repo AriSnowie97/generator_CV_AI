@@ -27,15 +27,21 @@ router = APIRouter(prefix="/resume", tags=["resume"])
 
 
 def _to_resume_response(resume) -> ResumeResponse:
+    from app.schemas.resume import DEFAULT_BLOCK_ORDER
+
     data = ProfileData.model_validate(resume.data_json or {})
     pages, warning = estimate_pages(data)
+    order = list(resume.block_order or DEFAULT_BLOCK_ORDER)
+    for b in DEFAULT_BLOCK_ORDER:
+        if b not in order:
+            order.append(b)
     return ResumeResponse(
         id=resume.id,
         user_id=resume.user_id,
         title=resume.title,
         template_id=resume.template_id,
         language=resume.language,
-        block_order=resume.block_order,
+        block_order=order,
         data=data,
         estimated_pages=pages,
         page_warning=warning,

@@ -60,6 +60,8 @@ def _extract_resume_corpus(data: ProfileData) -> str:
         parts.extend([exp.position, exp.company, *exp.bullets])
     for edu in data.education:
         parts.extend([edu.institution, edu.degree, edu.field_of_study])
+    for c in data.courses:
+        parts.extend([c.title, c.provider])
     return " ".join(p for p in parts if p).lower()
 
 
