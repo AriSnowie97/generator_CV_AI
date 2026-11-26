@@ -96,7 +96,7 @@ def build_verification_email(to_email: str, code: str, verify_url: str) -> tuple
           <tr>
             <td style="padding-top:20px; border-top:1px solid #e2e8f0; margin-top:20px; font-size:11.5px; color:#94a3b8;">
               Якщо ви не створювали акаунт у ResumeCraft, просто проігноруйте цей лист.<br />
-              © 2026 ResumeCraft™ · ДУІКТ
+              © 2026 ResumeCraft™
             </td>
           </tr>
         </table>

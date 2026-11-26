@@ -112,7 +112,7 @@ def generate_docx_bytes(
     """Build a clean, watermark-free DOCX document respecting block order and language."""
     labels = SECTION_TITLES.get(language, SECTION_TITLES["uk"])
     doc = Document()
-    doc.core_properties.author = "ResumeCraft — Аріна Бадовська"
+    doc.core_properties.author = "ResumeCraft"
     doc.core_properties.comments = "Created with ResumeCraft"
 
     for section in doc.sections:

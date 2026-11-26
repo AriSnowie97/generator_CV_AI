@@ -391,7 +391,7 @@ def render_resume_html(
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="generator" content="ResumeCraft" />
-  <meta name="author" content="ResumeCraft — Arina Badovska" />
+  <meta name="author" content="ResumeCraft" />
   <title>{_e(name)} - ResumeCraft</title>
   <style>{_template_css(template_id)}</style>
 </head>
